@@ -245,7 +245,16 @@ function renderNotePage() {
       `;
     }
     notePage.classList.remove("swap");
+    hideEditedTimestamp();
   }, 120);
+}
+
+function hideEditedTimestamp() {
+  const edited = notePage.querySelector(".edited");
+  if (!edited) return;
+  requestAnimationFrame(() => {
+    notePage.scrollTop = edited.offsetHeight + 24;
+  });
 }
 
 function renderSettingsOptions() {

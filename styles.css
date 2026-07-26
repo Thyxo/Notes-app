@@ -478,9 +478,9 @@ button {
   background: transparent;
 }
 
-.storage-warning,
 .compose-button,
-.mic-symbol {
+.mic-symbol-svg,
+.search-symbol-svg {
   display: none;
 }
 
@@ -674,16 +674,23 @@ button {
 
   .note-list-panel {
     transform: translateX(0);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    display: block;
+    overflow: auto;
+    overflow-x: hidden;
     border: 0;
     background: #000;
     box-shadow: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    padding: max(10px, env(safe-area-inset-top)) 16px max(10px, env(safe-area-inset-bottom));
+    padding: max(10px, env(safe-area-inset-top)) 16px calc(118px + env(safe-area-inset-bottom));
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
+    scrollbar-width: none;
+  }
+
+  .note-list-panel::-webkit-scrollbar {
+    display: none;
   }
 
   .note-list-panel::after {
@@ -777,71 +784,11 @@ button {
     fill: #fff;
   }
 
-  .storage-warning {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin: 4px 0 20px;
-    color: #918f99;
-    font-size: 15px;
-    line-height: 1.15;
-  }
-
-  .storage-warning strong {
-    color: #ffd000;
-    font-weight: 520;
-  }
-
-  .cloud-icon {
-    position: relative;
-    width: 22px;
-    height: 12px;
-    border: 2px solid #8f8d97;
-    border-top: 0;
-    border-radius: 0 0 12px 12px;
-    opacity: 0.9;
-  }
-
-  .cloud-icon::before,
-  .cloud-icon::after {
-    content: "";
-    position: absolute;
-  }
-
-  .cloud-icon::before {
-    width: 18px;
-    height: 18px;
-    left: 3px;
-    top: -12px;
-    border: 2px solid #8f8d97;
-    border-bottom: 0;
-    border-radius: 50% 50% 0 0;
-  }
-
-  .cloud-icon::after {
-    width: 32px;
-    height: 3px;
-    left: -4px;
-    top: 4px;
-    border-radius: 999px;
-    background: #8f8d97;
-    transform: rotate(43deg);
-  }
-
   .note-list {
-    flex: 1;
+    display: grid;
     gap: 28px;
-    overflow: auto;
-    overflow-x: hidden;
-    padding: 0 0 118px;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
-    scrollbar-width: none;
-  }
-
-  .note-list::-webkit-scrollbar {
-    display: none;
+    overflow: visible;
+    padding: 0;
   }
 
   .note-section h2 {
@@ -936,55 +883,31 @@ button {
     opacity: 1;
   }
 
-  .search-symbol {
-    left: 21px;
-    top: 16px;
-    width: 16px;
-    height: 16px;
-    border-width: 3px;
-    border-color: #fff;
-    opacity: 0.96;
-  }
-
-  .search-symbol::after {
-    width: 11px;
-    height: 3px;
-    right: -9px;
-    bottom: -5px;
-    background: #fff;
-  }
-
-  .mic-symbol {
+  .search-symbol-svg,
+  .mic-symbol-svg {
     display: block;
     position: absolute;
-    right: 22px;
-    top: 14px;
-    width: 13px;
-    height: 22px;
-    border: 3px solid #fff;
-    border-radius: 999px;
+    z-index: 1;
+    fill: none;
+    stroke: #fff;
+    stroke-width: 2.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    pointer-events: none;
   }
 
-  .mic-symbol::before,
-  .mic-symbol::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #fff;
+  .search-symbol-svg {
+    left: 20px;
+    top: 13px;
+    width: 24px;
+    height: 24px;
   }
 
-  .mic-symbol::before {
-    bottom: -8px;
-    width: 3px;
-    height: 8px;
-  }
-
-  .mic-symbol::after {
-    bottom: -11px;
-    width: 19px;
-    height: 3px;
-    border-radius: 999px;
+  .mic-symbol-svg {
+    right: 19px;
+    top: 11px;
+    width: 28px;
+    height: 28px;
   }
 
   .compose-button {
@@ -1005,35 +928,23 @@ button {
     -webkit-backdrop-filter: blur(30px) saturate(1.8);
   }
 
-  .compose-button::before {
-    content: "";
+  .compose-button svg {
     position: absolute;
-    width: 21px;
-    height: 21px;
-    left: 15px;
-    top: 15px;
-    border: 3px solid #fff;
-    border-radius: 5px;
-  }
-
-  .compose-button::after {
-    content: "";
-    position: absolute;
-    width: 21px;
-    height: 3px;
-    right: 12px;
-    top: 17px;
-    border-radius: 999px;
-    background: #fff;
-    transform: rotate(-42deg);
-    box-shadow: 7px -4px 0 -1px #fff;
+    inset: 12px;
+    width: 26px;
+    height: 26px;
+    fill: none;
+    stroke: #fff;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 
   .note-page {
     flex: 1;
     overflow: auto;
     overflow-x: hidden;
-    padding: 24px 30px 82px;
+    padding: 0 30px 82px;
     border-radius: 0;
     background: #000;
     color: #fff;
@@ -1110,7 +1021,8 @@ button {
   }
 
   .edited {
-    margin: 0 0 28px;
+    margin: 0 0 24px;
+    padding-top: 8px;
     color: #a4a2aa;
     font-size: 15px;
     text-align: center;
