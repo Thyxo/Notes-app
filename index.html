@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="da">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f7f4eb" />
+    <title>Noter</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="backdrop" aria-hidden="true">
+      <div class="wash wash-a"></div>
+      <div class="wash wash-b"></div>
+      <div class="wash wash-c"></div>
+    </div>
+
+    <main class="app-shell" id="app">
+      <aside class="sidebar glass-panel" aria-label="Mapper">
+        <div class="sidebar-top secret-tap-zone" id="secretTapZone">
+          <div class="brand">
+            <span class="notes-icon" aria-hidden="true"></span>
+            <span>Noter</span>
+          </div>
+          <button class="icon-button" type="button" aria-label="Ny mappe">+</button>
+        </div>
+        <nav class="folder-list" id="folderList"></nav>
+      </aside>
+
+      <section class="note-list-panel glass-panel" aria-label="Noteliste">
+        <div class="ios-status" aria-hidden="true">
+          <span>00.32</span>
+          <span class="status-dot"></span>
+          <span class="status-icons">▮▮▮  wifi  25</span>
+        </div>
+        <div class="toolbar topbar">
+          <button class="mobile-back round-nav" id="backToFolders" type="button" aria-label="Mapper">‹</button>
+          <h1 id="folderTitle">Noter</h1>
+          <button class="icon-button round-nav more-button" type="button" aria-label="Mere">•••</button>
+        </div>
+        <div class="storage-warning" aria-hidden="true">
+          <span class="cloud-icon"></span>
+          <span>iCloud-lagringsplads er fyldt · </span><strong>Få mere</strong>
+        </div>
+        <label class="search-wrap">
+          <span class="search-symbol" aria-hidden="true"></span>
+          <input id="noteSearch" inputmode="numeric" autocomplete="off" placeholder="Søg" aria-label="Søg i noter" />
+          <span class="mic-symbol" aria-hidden="true"></span>
+        </label>
+        <div class="note-list" id="noteList"></div>
+        <button class="compose-button" id="newNoteButton" type="button" aria-label="Ny note"></button>
+      </section>
+
+      <article class="editor-panel glass-panel" id="editorPanel" aria-label="Note">
+        <div class="toolbar editor-toolbar">
+          <button class="mobile-back" id="backToNotes" type="button" aria-label="Noter">Noter</button>
+          <div class="editor-actions" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="note-page" id="notePage"></div>
+      </article>
+
+      <div class="hotspot" id="hotspot" aria-hidden="true"></div>
+    </main>
+
+    <section class="settings-sheet glass-panel" id="settingsSheet" aria-hidden="true" aria-label="Performer-indstillinger">
+      <div class="sheet-handle"></div>
+      <header>
+        <h2>Performer</h2>
+        <button class="icon-button" id="closeSettings" type="button" aria-label="Luk">×</button>
+      </header>
+      <label>
+        Kategori
+        <select id="categorySelect"></select>
+      </label>
+      <label>
+        Forudsigelse
+        <select id="predictionSelect"></select>
+      </label>
+      <fieldset>
+        <legend>Hemmelig input</legend>
+        <label class="radio-line">
+          <input type="radio" name="inputMethod" value="longpress" />
+          Langt tryk
+        </label>
+        <label class="radio-line">
+          <input type="radio" name="inputMethod" value="search" />
+          Falsk søgefelt
+        </label>
+      </fieldset>
+      <button class="primary-button" id="saveSettings" type="button">OK</button>
+    </section>
+
+    <section class="number-pad glass-panel" id="numberPad" aria-hidden="true" aria-label="Talpanel">
+      <div class="pad-display" id="padDisplay">--</div>
+      <div class="pad-grid" id="padGrid"></div>
+      <button class="primary-button" id="padDone" type="button">Gem</button>
+    </section>
+
+    <script src="app.js"></script>
+  </body>
+</html>

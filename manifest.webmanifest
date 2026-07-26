@@ -1,0 +1,9 @@
+{
+  "name": "Noter",
+  "short_name": "Noter",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f7f4eb",
+  "theme_color": "#f7f4eb",
+  "icons": []
+}
