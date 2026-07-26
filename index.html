@@ -31,7 +31,13 @@
         <div class="toolbar topbar">
           <button class="mobile-back round-nav" id="backToFolders" type="button" aria-label="Mapper">‹</button>
           <h1 id="folderTitle">Noter</h1>
-          <button class="icon-button round-nav more-button" type="button" aria-label="Mere">•••</button>
+          <button class="icon-button round-nav more-button" type="button" aria-label="Mere">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="6" cy="12" r="1.8" />
+              <circle cx="12" cy="12" r="1.8" />
+              <circle cx="18" cy="12" r="1.8" />
+            </svg>
+          </button>
         </div>
         <div class="storage-warning" aria-hidden="true">
           <span class="cloud-icon"></span>
@@ -48,9 +54,26 @@
 
       <article class="editor-panel glass-panel" id="editorPanel" aria-label="Note">
         <div class="toolbar editor-toolbar">
-          <button class="mobile-back note-back-pill" id="backToNotes" type="button" aria-label="Noter">Noter</button>
-          <div class="editor-actions" aria-hidden="true">
-            <span></span><span></span><span></span>
+          <button class="mobile-back note-back-button" id="backToNotes" type="button" aria-label="Tilbage til noter">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15.8 4.4 8.2 12l7.6 7.6" />
+            </svg>
+          </button>
+          <div class="editor-actions">
+            <button class="editor-icon" type="button" aria-label="Del">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 15V3.8" />
+                <path d="m7.9 7.8 4.1-4 4.1 4" />
+                <path d="M6.2 11.2v7.1c0 1.1.7 1.8 1.8 1.8h8c1.1 0 1.8-.7 1.8-1.8v-7.1" />
+              </svg>
+            </button>
+            <button class="editor-icon" type="button" aria-label="Mere">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="6" cy="12" r="1.8" />
+                <circle cx="12" cy="12" r="1.8" />
+                <circle cx="18" cy="12" r="1.8" />
+              </svg>
+            </button>
           </div>
         </div>
         <div class="note-page" id="notePage"></div>
