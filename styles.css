@@ -1,8 +1,10 @@
 /* =========================================================
    Noter — Apple Notes klon (iOS 26 / "Liquid Glass")
-   Mål-metrics er aflæst fra rigtige iPhone-skærmbilleder:
-   16px side-margin på kort, 26px på den flydende bundlinje,
-   34px stor titel, 22px sektionsoverskrift, 17px rækketitel.
+   Mål-metrics er aflæst pixel for pixel fra rigtige iPhone-skærmbilleder
+   (iOS 26): 16px side-margin på kort (radius 26), 28,33px på den flydende
+   bundlinje (47,33px høj), 44px nav-knapper, 34px stor titel, 20px
+   semibold sektionsoverskrift, 17px rækketitel, rækker 64,33px.
+   Ingen negativ letter-spacing: Safari anvender selv SF Pros tracking.
    ========================================================= */
 
 *,
@@ -15,10 +17,11 @@
   color-scheme: light dark;
 
   --pad: 16px;          /* side-margin for kort og titler */
-  --bar-pad: 26px;      /* side-margin for den flydende bundlinje */
-  --radius: 20px;
-  --nav-h: 50px;
-  --btn: 42px;
+  --bar-pad: 28.33px;   /* side-margin for den flydende bundlinje */
+  --radius: 26px;
+  --nav-h: 44px;
+  --btn: 44px;
+  --bar-h: 47.33px;
 
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
     "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
@@ -43,6 +46,9 @@
   --nav-bg: rgba(242, 242, 247, 0.72);
   --sheet: rgba(242, 242, 247, 0.86);
   --dim: 0.16;
+  --glass-icon: #000000;
+  --placeholder: rgba(60, 60, 67, 0.6);
+  --edge: 242, 242, 247;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -52,14 +58,17 @@
     --label: #ffffff;
     --label2: rgba(235, 235, 245, 0.6);
     --label3: rgba(235, 235, 245, 0.42);
-    --sep: rgba(255, 255, 255, 0.12);
-    --accent: #ffd60a;
-    --yellow: #ffd60a;
+    --sep: rgba(255, 255, 255, 0.11);
+    --accent: #dcb13d;
+    --yellow: #dcb13d;
     --row-active: rgba(255, 255, 255, 0.07);
-    --glass: rgba(255, 255, 255, 0.17);
-    --glass-hi: rgba(255, 255, 255, 0.24);
-    --glass-line: rgba(255, 255, 255, 0.16);
-    --glass-shadow: 0 8px 26px rgba(0, 0, 0, 0.5);
+    --glass: rgba(24, 24, 24, 0.98);
+    --glass-hi: rgba(255, 255, 255, 0.04);
+    --glass-line: rgba(255, 255, 255, 0.15);
+    --glass-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    --glass-icon: #f5f5f5;
+    --placeholder: #a3a3a3;
+    --edge: 0, 0, 0;
     --nav-bg: rgba(0, 0, 0, 0.6);
     --sheet: rgba(28, 28, 30, 0.82);
     --dim: 0.42;
@@ -127,7 +136,7 @@ button {
   background: var(--glass);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   backdrop-filter: blur(24px) saturate(180%);
-  border: 0.5px solid var(--glass-line);
+  border: 1px solid var(--glass-line);
   box-shadow: var(--glass-shadow), inset 0 0.5px 0 var(--glass-hi);
 }
 
@@ -252,7 +261,6 @@ button {
 .nav-heading span {
   font-size: 17px;
   font-weight: 600;
-  letter-spacing: -0.4px;
   max-width: 100%;
   overflow: hidden;
   white-space: nowrap;
@@ -273,6 +281,9 @@ button {
   transition: transform 0.18s var(--ease), opacity 0.18s;
 }
 .gbtn:active { transform: scale(0.88); opacity: 0.75; }
+.gbtn .icon { width: 24px; height: 24px; color: var(--glass-icon); }
+/* chevron: 11×18,7pt glyf, ~2,3pt streg */
+.gbtn.back .icon { width: 26.6px; height: 26.6px; stroke-width: 2.07; margin-left: -3px; }
 
 .gpill {
   display: flex;
@@ -299,37 +310,37 @@ button {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding-bottom: calc(86px + env(safe-area-inset-bottom));
+  padding-bottom: 116px;
 }
 
 .large-title {
   margin: 0;
-  padding: 14px var(--pad) 0;
+  padding: 21.67px var(--pad) 0;
   font-size: 34px;
   line-height: 41px;
   font-weight: 700;
-  letter-spacing: -0.5px;
 }
 
 .icloud {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px var(--pad) 0;
-  font-size: 13px;
-  line-height: 18px;
-  letter-spacing: -0.08px;
+  gap: 9px;
+  margin-top: -2.2px;
+  padding: 0 var(--pad);
+  font-size: 15px;
+  line-height: 20px;
   color: var(--label2);
 }
 .icloud .link { color: var(--accent); font-weight: 400; }
+.icloud .cloud { width: 20.3px; height: 14.2px; stroke-width: 1.75; margin-left: -0.5px; }
 
 /* ---------------- sektioner + kort ---------------- */
 
 .sec {
-  margin-top: 26px;
+  margin-top: 29.37px;
 }
 .sec:first-child {
-  margin-top: 18px;
+  margin-top: 17.6px;
 }
 
 .sec-head {
@@ -337,11 +348,11 @@ button {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 0 var(--pad);
-  margin: 0 0 8px;
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.3px;
+  padding: 0 28.67px 0 var(--pad);
+  margin: 0 0 10.3px;
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 600;
 }
 .sec-head .chev {
   color: var(--accent);
@@ -362,7 +373,7 @@ button {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 9px 16px 9px 26px;
+  padding: 10.33px 16px 9.67px 28px;
   transition: background 0.12s;
 }
 .row:active { background: var(--row-active); }
@@ -371,18 +382,17 @@ button {
   content: "";
   position: absolute;
   top: 0;
-  left: 26px;
-  right: 12px;
-  height: 0.5px;
+  left: 28px;
+  right: 16px;
+  height: 1px;
   background: var(--sep);
 }
 
 .row h3 {
-  margin: 0 0 1px;
+  margin: 0 0 2.33px;
   font-size: 17px;
   line-height: 22px;
   font-weight: 600;
-  letter-spacing: -0.41px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -393,7 +403,6 @@ button {
   gap: 8px;
   font-size: 15px;
   line-height: 20px;
-  letter-spacing: -0.24px;
   color: var(--label2);
   white-space: nowrap;
   overflow: hidden;
@@ -414,14 +423,12 @@ button {
 .row.folder .name {
   flex: 1;
   font-size: 17px;
-  letter-spacing: -0.41px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .row.folder .count {
   font-size: 17px;
-  letter-spacing: -0.41px;
   color: var(--label2);
 }
 .row.folder .go { color: var(--label3); width: 16px; height: 16px; stroke-width: 2.4; }
@@ -437,25 +444,46 @@ button {
   z-index: 12;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 var(--bar-pad) max(12px, calc(env(safe-area-inset-bottom) - 16px));
+  gap: 13px;
+  padding: 0 var(--bar-pad) 28.67px;
   pointer-events: none;
   transform: translateY(calc(var(--kb, 0px) * -1));
   transition: transform 0.24s var(--ease);
 }
 .bar > * { pointer-events: auto; }
 
+/* iOS 26 "scroll edge": indholdet under bundlinjen tones mørkt ud */
+.bar::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--kb, 0px) * -1);
+  height: calc(92px + var(--kb, 0px));
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(var(--edge), 0) 0%,
+    rgba(var(--edge), 0.22) 30%,
+    rgba(var(--edge), 0.85) 72%,
+    rgba(var(--edge), 0.88) 100%
+  );
+}
+
 .searchbar {
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 7px;
-  height: 40px;
-  padding: 0 12px;
-  border-radius: 20px;
-  color: var(--label2);
+  gap: 7.9px;
+  height: var(--bar-h);
+  padding: 0 17px 0 15.9px;
+  border-radius: calc(var(--bar-h) / 2);
+  color: var(--glass-icon);
 }
+.searchbar .icon:first-child { width: 22px; height: 22px; stroke-width: 2.2; }
+.searchbar .icon:last-child { width: 24px; height: 24px; stroke-width: 1.9; }
 .searchbar input {
   flex: 1;
   min-width: 0;
@@ -463,21 +491,21 @@ button {
   background: none;
   outline: none;
   font-size: 17px;
-  letter-spacing: -0.41px;
   color: var(--label);
 }
-.searchbar input::placeholder { color: var(--label2); opacity: 1; }
+.searchbar input::placeholder { color: var(--placeholder); opacity: 1; }
 
 .tools {
   display: flex;
   align-items: center;
-  height: 44px;
+  height: var(--bar-h);
   padding: 0 3px;
-  border-radius: 22px;
+  border-radius: calc(var(--bar-h) / 2);
+  color: var(--glass-icon);
 }
 .tools button {
   width: 52px;
-  height: 44px;
+  height: calc(var(--bar-h) - 2px);
   display: grid;
   place-items: center;
   border-radius: 22px;
@@ -486,14 +514,16 @@ button {
 .tools button:active { background: rgba(128, 128, 128, 0.22); }
 
 .compose {
-  width: 46px;
-  height: 46px;
+  flex: none;
+  width: var(--bar-h);
+  height: var(--bar-h);
   border-radius: 50%;
   display: grid;
   place-items: center;
   transition: transform 0.18s var(--ease);
 }
 .compose:active { transform: scale(0.9); }
+.compose .icon { width: 30px; height: 30px; stroke-width: 1.6; color: var(--glass-icon); }
 
 /* ---------------- note ---------------- */
 
@@ -513,7 +543,6 @@ button {
   right: 0;
   text-align: center;
   font-size: 12px;
-  letter-spacing: -0.05px;
   color: var(--label2);
 }
 
@@ -522,21 +551,18 @@ button {
   font-size: 32px;
   line-height: 1.16;
   font-weight: 700;
-  letter-spacing: -0.6px;
 }
 
 .note-body p {
   margin: 0;
   font-size: 18px;
   line-height: 1.45;
-  letter-spacing: -0.2px;
 }
 .note-body p.gap { height: 12px; }
 
 .note-body .lead {
   font-size: 20px;
   font-weight: 600;
-  letter-spacing: -0.35px;
   padding-top: 6px;
 }
 
@@ -547,7 +573,6 @@ button {
 .note-ol li {
   font-size: 18px;
   line-height: 1.45;
-  letter-spacing: -0.2px;
   margin-bottom: 8px;
   padding-left: 6px;
 }
@@ -626,7 +651,6 @@ button {
   margin: 0 4px 16px;
   font-size: 22px;
   font-weight: 700;
-  letter-spacing: -0.3px;
 }
 
 .field-card {
@@ -643,7 +667,6 @@ button {
   gap: 12px;
   padding: 11px 14px;
   font-size: 17px;
-  letter-spacing: -0.41px;
 }
 .field + .field::before {
   content: "";
@@ -706,7 +729,6 @@ button {
   color: #000;
   font-size: 17px;
   font-weight: 600;
-  letter-spacing: -0.41px;
 }
 .primary:active { opacity: 0.75; }
 
@@ -720,7 +742,6 @@ button {
   color: var(--accent);
   font-size: 17px;
   font-weight: 600;
-  letter-spacing: -0.41px;
 }
 .secondary:active { opacity: 0.75; }
 

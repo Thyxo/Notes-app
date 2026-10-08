@@ -1,8 +1,9 @@
-const CACHE_NAME = "liquid-notes-v12";
+const CACHE_NAME = "liquid-notes-v13";
 const ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest",
   "./home/page1.webp", "./home/page2.webp", "./home/page3.webp",
   "./home/dots1.png", "./home/dots2.png", "./home/dots3.png",
-  "./home/dock.webp", "./home/noter.png"];
+  "./home/dock.webp", "./home/noter.png",
+  "./favicon.png", "./apple-touch-icon.png", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
