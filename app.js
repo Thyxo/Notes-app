@@ -488,6 +488,279 @@ function secretSearchInput(event) {
   }
 }
 
+/* ---------------- falsk hjemmeskærm (perform) ----------------
+   Tilskuerens tal læses af, hvilket ikon fingeren står på, når et
+   swipe starter: swipe 1 (side 1 → 2) giver første ciffer, swipe 2
+   (side 2 → 3) giver andet ciffer. Noter åbnes fra side 3. */
+
+const home = document.querySelector("#home");
+const homeStage = document.querySelector("#homeStage");
+const homeTrack = document.querySelector("#homeTrack");
+const homePress = document.querySelector("#homePress");
+const homeDots = [...document.querySelectorAll("#homeDots img")];
+
+/* Mål i screenshot-pixels (1179 bred, ikon-laget starter ved y=140) */
+const HOME_W = 1179;
+const HOME_PAGES_TOP = 140;
+const HOME_PAGES_H = 1900;
+const HOME_ICON = 225;
+const ICON_COLS = [58, 337, 618, 897];
+const ICON_ROWS = [245, 524, 803, 1082, 1361, 1640];
+const OCCUPIED = [
+  ["1111", "1111", "1111", "1111", "1111", "1111"],
+  ["1111", "1111", "1111", "1111", "1111", "1111"],
+  ["1111", "1100", "0000", "1110", "1111", "1111"],
+];
+/* [række, kolonne] → ciffer. De ni nederste i et 3×3 + 0 over midten. Ens på side 1 og 2. */
+const DIGIT_CELLS = {
+  "2,2": 0,
+  "3,1": 1, "3,2": 2, "3,3": 3,
+  "4,1": 4, "4,2": 5, "4,3": 6,
+  "5,1": 7, "5,2": 8, "5,3": 9,
+};
+const NOTES_CELL = { page: 2, row: 3, col: 2 };
+
+let homePage = 0;
+let homeDigits = [null, null];
+let homeDrag = null;
+
+function isPerforming() {
+  return home.classList.contains("on");
+}
+
+function homeScale() {
+  return homeStage.getBoundingClientRect().width / HOME_W;
+}
+
+function homeCellAt(clientX, clientY) {
+  const rect = homeStage.getBoundingClientRect();
+  const k = rect.width / HOME_W;
+  const x = (clientX - rect.left) / k;
+  const y = (clientY - rect.top) / k;
+  const half = (ICON_COLS[1] - ICON_COLS[0]) / 2;
+  const col = ICON_COLS.findIndex((left) => Math.abs(x - (left + HOME_ICON / 2)) <= half);
+  const row = ICON_ROWS.findIndex((top) => Math.abs(y - (top + HOME_ICON / 2)) <= half);
+  if (col < 0 || row < 0) return null;
+  return { row, col, y };
+}
+
+function setHomeOffset(px, animate, duration = 420) {
+  homeTrack.style.transition = animate ? `transform ${duration}ms cubic-bezier(0.22, 0.9, 0.3, 1)` : "none";
+  homeTrack.style.transform = `translate3d(${px}px, 0, 0)`;
+}
+
+function setHomeDot(index) {
+  homeDots.forEach((dot, i) => dot.classList.toggle("on", i === index));
+}
+
+function enterPerform() {
+  homePage = 0;
+  homeDigits = [null, null];
+  homeDrag = null;
+  homeStage.style.transition = "none";
+  homeStage.style.transform = "";
+  homeStage.style.opacity = "";
+  home.classList.add("on");
+  home.setAttribute("aria-hidden", "false");
+  setHomeOffset(0, false);
+  setHomeDot(0);
+  syncPerformButton();
+}
+
+function exitPerform() {
+  home.classList.remove("on");
+  home.setAttribute("aria-hidden", "true");
+  homePress.classList.remove("on");
+  syncPerformButton();
+}
+
+function syncPerformButton() {
+  document.querySelector("#performButton").textContent = isPerforming() ? "Afslut perform" : "Perform";
+}
+
+function showPress(cell) {
+  if (!cell || OCCUPIED[homePage][cell.row][cell.col] !== "1") return;
+  homePress.style.left = `${(ICON_COLS[cell.col] / HOME_W) * 100}%`;
+  homePress.style.top = `${((ICON_ROWS[cell.row] - HOME_PAGES_TOP) / HOME_PAGES_H) * 100}%`;
+  homePress.classList.add("on");
+}
+
+function homePointerDown(event) {
+  if (homeDrag || !event.isPrimary) return;
+  const cell = homeCellAt(event.clientX, event.clientY);
+  const width = homeStage.getBoundingClientRect().width;
+  homeDrag = {
+    id: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    lastX: event.clientX,
+    lastT: event.timeStamp,
+    vx: 0,
+    lock: null,
+    width,
+    cell,
+    digit: cell ? DIGIT_CELLS[`${cell.row},${cell.col}`] : undefined,
+  };
+  try {
+    homeStage.setPointerCapture(event.pointerId);
+  } catch {
+    /* ignoreres — swipet virker også uden capture */
+  }
+  setHomeOffset(-homePage * width, false);
+  showPress(cell);
+
+  /* Statuslinje-zonen tæller med i de hemmelige 5 tryk */
+  const rect = homeStage.getBoundingClientRect();
+  if (event.clientY - rect.top < HOME_PAGES_TOP * homeScale()) handleSecretTap();
+}
+
+function homePointerMove(event) {
+  const drag = homeDrag;
+  if (!drag || event.pointerId !== drag.id) return;
+  const dx = event.clientX - drag.startX;
+  const dy = event.clientY - drag.startY;
+
+  if (!drag.lock && Math.hypot(dx, dy) > 8) {
+    drag.lock = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+    homePress.classList.remove("on");
+  }
+  if (drag.lock !== "x") return;
+
+  const dt = Math.max(1, event.timeStamp - drag.lastT);
+  drag.vx = drag.vx * 0.4 + ((event.clientX - drag.lastX) / dt) * 0.6;
+  drag.lastX = event.clientX;
+  drag.lastT = event.timeStamp;
+
+  let offset = dx;
+  const atEdge = (homePage === 0 && dx > 0) || (homePage === 2 && dx < 0);
+  if (atEdge) {
+    /* gummibånd ved første/sidste side, som iOS */
+    const w = drag.width;
+    offset = Math.sign(dx) * (1 - 1 / ((Math.abs(dx) * 0.55) / w + 1)) * w;
+  }
+  const position = -homePage * drag.width + offset;
+  setHomeOffset(position, false);
+  setHomeDot(Math.max(0, Math.min(2, Math.round(-position / drag.width))));
+}
+
+function homePointerUp(event) {
+  const drag = homeDrag;
+  if (!drag || event.pointerId !== drag.id) return;
+  homeDrag = null;
+  homePress.classList.remove("on");
+
+  if (drag.lock === "x") {
+    const dx = event.clientX - drag.startX;
+    let target = homePage;
+    if (dx < -drag.width / 2 || drag.vx < -0.3) target = homePage + 1;
+    else if (dx > drag.width / 2 || drag.vx > 0.3) target = homePage - 1;
+    target = Math.max(0, Math.min(2, target));
+
+    /* Swipe fremad fra side 1 eller 2 registrerer cifret under fingeren */
+    if (target === homePage + 1 && homePage < 2) {
+      homeDigits[homePage] = drag.digit ?? null;
+    }
+
+    const remaining = Math.abs(-target * drag.width - (-homePage * drag.width + dx));
+    const duration = Math.round(Math.max(260, Math.min(480, 260 + remaining * 0.6)));
+    homePage = target;
+    setHomeOffset(-homePage * drag.width, true, duration);
+    setHomeDot(homePage);
+    return;
+  }
+
+  if (drag.lock === null && event.type === "pointerup") {
+    const cell = homeCellAt(event.clientX, event.clientY);
+    if (
+      cell &&
+      homePage === NOTES_CELL.page &&
+      cell.row === NOTES_CELL.row &&
+      cell.col === NOTES_CELL.col
+    ) {
+      launchNotes();
+    }
+  }
+}
+
+function homePointerCancel(event) {
+  if (!homeDrag || event.pointerId !== homeDrag.id) return;
+  const width = homeDrag.width;
+  homeDrag = null;
+  homePress.classList.remove("on");
+  setHomeOffset(-homePage * width, true);
+  setHomeDot(homePage);
+}
+
+function applyHomeDigits() {
+  const [first, second] = homeDigits;
+  let number = null;
+  if (first !== null && second !== null) number = first * 10 + second;
+  else if (first !== null) number = first;
+  else if (second !== null) number = second;
+  if (number === 0 && first !== null && second !== null) number = 100;
+  if (number >= 1 && number <= 100) {
+    state.spectatorNumber = number;
+    saveState();
+  }
+}
+
+function launchNotes() {
+  applyHomeDigits();
+  renderAll();
+
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const k = homeScale();
+  const stageRect = homeStage.getBoundingClientRect();
+  const size = HOME_ICON * k;
+  const iconLeft = stageRect.left + ICON_COLS[NOTES_CELL.col] * k;
+  const iconTop = stageRect.top + ICON_ROWS[NOTES_CELL.row] * k;
+  const s = size / W;
+  /* Et kvadrat midt i appen skaleres ned, så det dækker ikonet præcist */
+  const a = (H - W) / 2;
+  const radius = (size * 0.23) / s;
+
+  const icon = document.createElement("div");
+  icon.className = "launch-icon";
+  icon.style.top = `${a}px`;
+  icon.style.width = `${W}px`;
+  icon.style.height = `${W}px`;
+  app.appendChild(icon);
+
+  app.classList.add("launching");
+  app.style.transition = "none";
+  app.style.transformOrigin = "0 0";
+  app.style.transform = `translate3d(${iconLeft}px, ${iconTop - a * s}px, 0) scale(${s})`;
+  app.style.clipPath = `inset(${a}px 0 ${H - a - W}px 0 round ${radius}px)`;
+  app.style.webkitClipPath = app.style.clipPath;
+  app.getBoundingClientRect();
+
+  const ease = "cubic-bezier(0.2, 0.85, 0.25, 1)";
+  app.style.transition = `transform 520ms ${ease}, clip-path 520ms ${ease}, -webkit-clip-path 520ms ${ease}`;
+  app.style.transform = "translate3d(0, 0, 0) scale(1)";
+  app.style.clipPath = "inset(0 0 0 0 round 0px)";
+  app.style.webkitClipPath = app.style.clipPath;
+
+  icon.style.transition = "opacity 200ms ease-out";
+  icon.getBoundingClientRect();
+  icon.style.opacity = "0";
+
+  homeStage.style.transition = `transform 520ms ${ease}, opacity 520ms ease`;
+  homeStage.style.transform = "scale(1.12)";
+  homeStage.style.opacity = "0.4";
+
+  window.setTimeout(() => {
+    icon.remove();
+    app.classList.remove("launching");
+    app.style.transition = "";
+    app.style.transform = "";
+    app.style.transformOrigin = "";
+    app.style.clipPath = "";
+    app.style.webkitClipPath = "";
+    exitPerform();
+  }, 560);
+}
+
 /* ---------------- billedvedhæftning ---------------- */
 
 function attachImage(file) {
@@ -558,14 +831,27 @@ function registerEvents() {
 
   categorySelect.addEventListener("change", syncPredictionSelect);
   scrim.addEventListener("click", closeSettings);
-  document.querySelector("#saveSettings").addEventListener("click", () => {
+  const applySettings = () => {
     state.category = categorySelect.value;
     state.prediction = predictionSelect.value;
     state.inputMethod = document.querySelector("input[name='inputMethod']:checked")?.value || "longpress";
     saveState();
     closeSettings();
     renderAll();
+  };
+  document.querySelector("#saveSettings").addEventListener("click", applySettings);
+  document.querySelector("#performButton").addEventListener("click", () => {
+    const wasPerforming = isPerforming();
+    applySettings();
+    if (wasPerforming) exitPerform();
+    else enterPerform();
   });
+
+  homeStage.addEventListener("pointerdown", homePointerDown);
+  homeStage.addEventListener("pointermove", homePointerMove);
+  homeStage.addEventListener("pointerup", homePointerUp);
+  homeStage.addEventListener("pointercancel", homePointerCancel);
+  home.addEventListener("contextmenu", (event) => event.preventDefault());
 
   const hotspot = document.querySelector("#hotspot");
   hotspot.addEventListener("pointerdown", () => {

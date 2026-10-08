@@ -9,7 +9,7 @@ A static, no-build, single-page web app that visually mimics Apple Notes (Danish
 - `index.html` — markup for the notes shell (sidebar, note list, editor panel, settings sheet, number pad)
 - `app.js` — all app logic and state (single file, no modules/bundler)
 - `styles.css` — all styling (CSS custom properties for light/dark theme, glassmorphism)
-- `sw.js` — service worker for offline caching (PWA), cache name `liquid-notes-v9` — **bump this version string whenever cached assets change**, otherwise installed clients won't see updates
+- `sw.js` — service worker for offline caching (PWA), cache name `liquid-notes-v11` — **bump this version string whenever cached assets change**, otherwise installed clients won't see updates
 - `manifest.webmanifest` — PWA manifest
 
 There is no `package.json`, build step, bundler, linter, or test suite. Open `index.html` directly in a browser (or serve the folder statically) to run it.
@@ -34,6 +34,7 @@ The core deception lives entirely in `app.js` and is important to preserve when 
    - **Secret tap zone**: 5 taps within 4s on any nav bar (`handleSecretTap`, wired to every `[data-secret]` element) opens the performer sheet.
    - **Long-press hotspot**: a 2s press on `#hotspot` — an invisible 62×96 box on the **left edge, vertically centered** — opens a fake numeric keypad (`openPad`), but only when `inputMethod === "longpress"`.
    - **Fake search field**: when `inputMethod === "search"`, typing digits into the visible search box (`secretSearchInput`) silently captures the spectator number instead of actually searching, then clears and blurs itself.
+   - **Perform mode / fake home screen**: the "Perform" button in the performer sheet shows `#home`, a fake iPhone home screen built from real 1179×2556 screenshots on a pure-black wallpaper (`home/page1-3.webp` icon layers that slide, stationary `home/dock.webp`, per-page `home/dotsN.png`). The icon under the finger when a swipe *starts* is the digit: swipe page 1→2 = first digit, page 2→3 = second digit. Digits sit on the bottom 3×3 block (1–9) plus the cell above its middle (0), same on pages 1 and 2 (`DIGIT_CELLS`). Tapping Noter on page 3 (`NOTES_CELL`) sets `spectatorNumber` (`00` = 100) and plays the open animation (`launchNotes`). All geometry constants are in screenshot pixels — re-measure them if the screenshots are replaced. 5 taps on the status-bar zone opens the sheet. Perform mode is never persisted; the app always starts in Notes.
 4. **Word pools** live in the `pools` object at the top of `app.js` (currently `animals`, `celebrities`, both Danish). Add new pools by adding a new key with `label`, `title`, and a 100-item `items` array — keep pools at 100 items since `spectatorNumber` is clamped to 1–100.
 5. **Decoy notes** (`getNotes()`) are static filler content designed to look like a normal person's actual notes app, unrelated to the trick, so nothing looks suspicious if someone else opens the app.
 
