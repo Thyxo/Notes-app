@@ -51,6 +51,7 @@ const fallbackState = {
   spectatorNumber: 37,
   selectedNote: "prediction",
   images: {},
+  swipeStyle: "standard",
 };
 
 let state = loadState();
@@ -427,6 +428,11 @@ function openSettings() {
   document.querySelectorAll("input[name='inputMethod']").forEach((radio) => {
     radio.checked = radio.value === state.inputMethod;
   });
+  const swipeSelect = document.querySelector("#swipeSelect");
+  swipeSelect.innerHTML = Object.entries(SWIPE_STYLES)
+    .map(([id, label]) => `<option value="${id}">${label}</option>`)
+    .join("");
+  swipeSelect.value = SWIPE_STYLES[state.swipeStyle] ? state.swipeStyle : "standard";
   currentNumber.textContent = state.spectatorNumber;
   fitViewport();
   document.querySelector("#viewportDiag").textContent =
@@ -577,9 +583,137 @@ function homeCellAt(clientX, clientY) {
   return { row, col, y };
 }
 
-function setHomeOffset(px, animate, duration = 420) {
-  homeTrack.style.transition = animate ? `transform ${duration}ms cubic-bezier(0.22, 0.9, 0.3, 1)` : "none";
+/* ---- swipe-motor: flere "følelser" man kan vælge i det hemmelige ark ---- */
+
+const SWIPE_STYLES = {
+  standard: "Standard (som før)",
+  spring: "iOS-fjeder",
+  bouncy: "Blød fjeder med lille bounce",
+  glide: "Glid (følger fingerens fart)",
+};
+
+let homeOffset = 0;
+let homeAnim = null;
+
+function renderHomeOffset(px) {
+  homeOffset = px;
   homeTrack.style.transform = `translate3d(${px}px, 0, 0)`;
+}
+
+function stopHomeAnim() {
+  if (!homeAnim) return;
+  homeAnim.stop();
+  homeAnim = null;
+}
+
+/* Aktuel position, også midt i en CSS-transition (så man kan gribe siden) */
+function currentHomeOffset() {
+  if (homeAnim?.kind === "css") {
+    const m = new DOMMatrixReadOnly(getComputedStyle(homeTrack).transform);
+    return m.m41;
+  }
+  return homeOffset;
+}
+
+function setHomeOffset(px, animate, duration = 420) {
+  stopHomeAnim();
+  homeTrack.style.transition = animate ? `transform ${duration}ms cubic-bezier(0.22, 0.9, 0.3, 1)` : "none";
+  renderHomeOffset(px);
+}
+
+function cssAnim(to, duration, easing) {
+  homeTrack.style.transition = `transform ${duration}ms ${easing}`;
+  renderHomeOffset(to);
+  const timer = window.setTimeout(() => {
+    homeTrack.style.transition = "none";
+    if (homeAnim?.timer === timer) homeAnim = null;
+  }, duration + 30);
+  homeAnim = {
+    kind: "css",
+    timer,
+    stop() {
+      const now = currentHomeOffsetFromStyle();
+      window.clearTimeout(timer);
+      homeTrack.style.transition = "none";
+      renderHomeOffset(now);
+    },
+  };
+}
+
+function currentHomeOffsetFromStyle() {
+  const m = new DOMMatrixReadOnly(getComputedStyle(homeTrack).transform);
+  return m.m41;
+}
+
+/* Dæmpet fjeder (som UIKit): response = periode i sek., damping = 1 er uden bounce */
+function springAnim(from, to, velocity, response, damping) {
+  homeTrack.style.transition = "none";
+  const k = (2 * Math.PI / response) ** 2;
+  const c = (4 * Math.PI * damping) / response;
+  let x = from;
+  let v = velocity * 1000; /* px/ms → px/s */
+  let last = performance.now();
+  let raf = 0;
+  let alive = true;
+  const step = (now) => {
+    if (!alive) return;
+    let dt = Math.min(0.064, (now - last) / 1000);
+    last = now;
+    while (dt > 0) {
+      const h = Math.min(dt, 1 / 240);
+      v += (-k * (x - to) - c * v) * h;
+      x += v * h;
+      dt -= h;
+    }
+    if (Math.abs(x - to) < 0.25 && Math.abs(v) < 8) {
+      renderHomeOffset(to);
+      alive = false;
+      homeAnim = null;
+      return;
+    }
+    renderHomeOffset(x);
+    raf = requestAnimationFrame(step);
+  };
+  raf = requestAnimationFrame(step);
+  /* Sikkerhedsnet: hvis siden ikke tegnes (rAF fyrer ikke), land på målet */
+  const fallback = window.setTimeout(() => {
+    if (alive) {
+      alive = false;
+      cancelAnimationFrame(raf);
+      renderHomeOffset(to);
+      homeAnim = null;
+    }
+  }, 1600);
+  homeAnim = {
+    kind: "spring",
+    stop() {
+      alive = false;
+      cancelAnimationFrame(raf);
+      window.clearTimeout(fallback);
+    },
+  };
+}
+
+function animateHomeTo(to, velocity) {
+  stopHomeAnim();
+  const from = homeOffset;
+  const distance = to - from;
+  const style = SWIPE_STYLES[state.swipeStyle] ? state.swipeStyle : "standard";
+
+  if (style === "spring") return springAnim(from, to, velocity, 0.34, 1);
+  if (style === "bouncy") return springAnim(from, to, velocity, 0.46, 0.8);
+
+  if (style === "glide") {
+    /* Kurvens start-hældning sættes, så den fortsætter med fingerens fart */
+    const duration = 420;
+    const slope = Math.abs(distance) > 1 ? (velocity * duration) / distance : 0;
+    const x1 = 0.18;
+    const y1 = Math.max(0, Math.min(1, slope * x1));
+    return cssAnim(to, duration, `cubic-bezier(${x1}, ${y1.toFixed(3)}, 0.24, 1)`);
+  }
+
+  const duration = Math.round(Math.max(260, Math.min(480, 260 + Math.abs(distance) * 0.6)));
+  return cssAnim(to, duration, "cubic-bezier(0.22, 0.9, 0.3, 1)");
 }
 
 function setHomeDot(index) {
@@ -622,13 +756,21 @@ function homePointerDown(event) {
   if (homeDrag || !event.isPrimary) return;
   const cell = homeCellAt(event.clientX, event.clientY);
   const width = homeStage.getBoundingClientRect().width;
+
+  /* Grib siden hvor den er, også midt i en animation — intet hop */
+  const grabbed = currentHomeOffset();
+  stopHomeAnim();
+  homeTrack.style.transition = "none";
+  renderHomeOffset(grabbed);
+  const startPage = Math.max(0, Math.min(2, Math.round(-grabbed / width)));
+
   homeDrag = {
     id: event.pointerId,
     startX: event.clientX,
     startY: event.clientY,
-    lastX: event.clientX,
-    lastT: event.timeStamp,
-    vx: 0,
+    startOffset: grabbed,
+    startPage,
+    samples: [{ x: event.clientX, t: event.timeStamp }],
     lock: null,
     width,
     cell,
@@ -639,8 +781,32 @@ function homePointerDown(event) {
   } catch {
     /* ignoreres — swipet virker også uden capture */
   }
-  setHomeOffset(-homePage * width, false);
+  homePage = startPage;
   showPress(cell);
+}
+
+function rubberBand(position, width) {
+  const min = -2 * width;
+  const band = (over) => (1 - 1 / ((over * 0.55) / width + 1)) * width;
+  if (position > 0) return band(position);
+  if (position < min) return min - band(min - position);
+  return position;
+}
+
+function homeVelocity(drag, releaseTime) {
+  const samples = drag.samples;
+  const last = samples[samples.length - 1];
+  /* Holdt fingeren stille før den slap: ingen fart (som iOS) */
+  if (releaseTime - last.t > 150) return 0;
+  let first = samples[0];
+  for (const sample of samples) {
+    if (last.t - sample.t <= 100) {
+      first = sample;
+      break;
+    }
+  }
+  const dt = last.t - first.t;
+  return dt > 0 ? (last.x - first.x) / dt : 0;
 }
 
 function homePointerMove(event) {
@@ -655,20 +821,11 @@ function homePointerMove(event) {
   }
   if (drag.lock !== "x") return;
 
-  const dt = Math.max(1, event.timeStamp - drag.lastT);
-  drag.vx = drag.vx * 0.4 + ((event.clientX - drag.lastX) / dt) * 0.6;
-  drag.lastX = event.clientX;
-  drag.lastT = event.timeStamp;
+  drag.samples.push({ x: event.clientX, t: event.timeStamp });
+  if (drag.samples.length > 12) drag.samples.shift();
 
-  let offset = dx;
-  const atEdge = (homePage === 0 && dx > 0) || (homePage === 2 && dx < 0);
-  if (atEdge) {
-    /* gummibånd ved første/sidste side, som iOS */
-    const w = drag.width;
-    offset = Math.sign(dx) * (1 - 1 / ((Math.abs(dx) * 0.55) / w + 1)) * w;
-  }
-  const position = -homePage * drag.width + offset;
-  setHomeOffset(position, false);
+  const position = rubberBand(drag.startOffset + dx, drag.width);
+  renderHomeOffset(position);
   setHomeDot(Math.max(0, Math.min(2, Math.round(-position / drag.width))));
 }
 
@@ -679,22 +836,34 @@ function homePointerUp(event) {
   homePress.classList.remove("on");
 
   if (drag.lock === "x") {
-    const dx = event.clientX - drag.startX;
-    let target = homePage;
-    if (dx < -drag.width / 2 || drag.vx < -0.3) target = homePage + 1;
-    else if (dx > drag.width / 2 || drag.vx > 0.3) target = homePage - 1;
-    target = Math.max(0, Math.min(2, target));
+    if (event.clientX !== drag.samples[drag.samples.length - 1].x) {
+      drag.samples.push({ x: event.clientX, t: event.timeStamp });
+    }
+    const velocity = homeVelocity(drag, event.timeStamp);
+    const position = homeOffset;
+    const nearest = Math.round(-position / drag.width);
+
+    let target = nearest;
+    if (velocity < -0.3) target = Math.floor(-position / drag.width) + 1;
+    else if (velocity > 0.3) target = Math.ceil(-position / drag.width) - 1;
+    target = Math.max(0, Math.min(2, Math.max(drag.startPage - 1, Math.min(drag.startPage + 1, target))));
 
     /* Swipe fremad fra side 1 eller 2 registrerer cifret under fingeren */
-    if (target === homePage + 1 && homePage < 2) {
-      homeDigits[homePage] = drag.digit ?? null;
+    if (target === drag.startPage + 1 && drag.startPage < 2) {
+      homeDigits[drag.startPage] = drag.digit ?? null;
     }
 
-    const remaining = Math.abs(-target * drag.width - (-homePage * drag.width + dx));
-    const duration = Math.round(Math.max(260, Math.min(480, 260 + remaining * 0.6)));
     homePage = target;
-    setHomeOffset(-homePage * drag.width, true, duration);
     setHomeDot(homePage);
+    animateHomeTo(-homePage * drag.width, velocity);
+    return;
+  }
+
+  /* Grebet midt i en animation og sluppet uden swipe: land på nærmeste side */
+  if (Math.abs(homeOffset + drag.startPage * drag.width) > 0.5) {
+    homePage = drag.startPage;
+    setHomeDot(homePage);
+    animateHomeTo(-homePage * drag.width, 0);
     return;
   }
 
@@ -721,8 +890,8 @@ function homePointerCancel(event) {
   const width = homeDrag.width;
   homeDrag = null;
   homePress.classList.remove("on");
-  setHomeOffset(-homePage * width, true);
   setHomeDot(homePage);
+  animateHomeTo(-homePage * width, 0);
 }
 
 function applyHomeDigits() {
@@ -872,6 +1041,7 @@ function registerEvents() {
     state.category = categorySelect.value;
     state.prediction = predictionSelect.value;
     state.inputMethod = document.querySelector("input[name='inputMethod']:checked")?.value || "longpress";
+    state.swipeStyle = document.querySelector("#swipeSelect").value || "standard";
     saveState();
     closeSettings();
     renderAll();
