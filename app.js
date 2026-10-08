@@ -57,6 +57,7 @@ let state = loadState();
 let tapTimes = [];
 let padValue = "";
 let pressTimer = null;
+let settingsOpenedAt = 0;
 
 function loadState() {
   try {
@@ -400,6 +401,7 @@ function openSettings() {
     radio.checked = radio.value === state.inputMethod;
   });
   currentNumber.textContent = state.spectatorNumber;
+  settingsOpenedAt = Date.now();
   settingsSheet.classList.add("open");
   settingsSheet.setAttribute("aria-hidden", "false");
   scrim.classList.add("on");
@@ -426,7 +428,7 @@ function capitalize(text) {
 function handleSecretTap() {
   const now = Date.now();
   tapTimes = [...tapTimes.filter((time) => now - time < 4000), now];
-  if (tapTimes.length >= 5) {
+  if (tapTimes.length >= 3) {
     tapTimes = [];
     openSettings();
   }
@@ -503,6 +505,7 @@ const homeDots = [...document.querySelectorAll("#homeDots img")];
 const HOME_W = 1179;
 const HOME_PAGES_TOP = 140;
 const HOME_PAGES_H = 1900;
+const HOME_DOCK_TOP = 2140;
 const HOME_ICON = 225;
 const ICON_COLS = [58, 337, 618, 897];
 const ICON_ROWS = [245, 524, 803, 1082, 1361, 1640];
@@ -608,10 +611,6 @@ function homePointerDown(event) {
   }
   setHomeOffset(-homePage * width, false);
   showPress(cell);
-
-  /* Statuslinje-zonen tæller med i de hemmelige 5 tryk */
-  const rect = homeStage.getBoundingClientRect();
-  if (event.clientY - rect.top < HOME_PAGES_TOP * homeScale()) handleSecretTap();
 }
 
 function homePointerMove(event) {
@@ -671,6 +670,11 @@ function homePointerUp(event) {
 
   if (drag.lock === null && event.type === "pointerup") {
     const cell = homeCellAt(event.clientX, event.clientY);
+
+    /* Tomme områder (over/under ikon-gridet, ikke docken) tæller med i de hemmelige 3 tryk */
+    const stageTop = homeStage.getBoundingClientRect().top;
+    if (!cell && event.clientY - stageTop < HOME_DOCK_TOP * homeScale()) handleSecretTap();
+
     if (
       cell &&
       homePage === NOTES_CELL.page &&
@@ -830,7 +834,10 @@ function registerEvents() {
   });
 
   categorySelect.addEventListener("change", syncPredictionSelect);
-  scrim.addEventListener("click", closeSettings);
+  scrim.addEventListener("click", () => {
+    /* Det tryk, der åbnede arket, må ikke lukke det igen via sit eget click */
+    if (Date.now() - settingsOpenedAt > 400) closeSettings();
+  });
   const applySettings = () => {
     state.category = categorySelect.value;
     state.prediction = predictionSelect.value;

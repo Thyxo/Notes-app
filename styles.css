@@ -737,19 +737,18 @@ button {
   overflow: hidden;
   background: #000;
   touch-action: none;
-  --sw: min(100vw, calc(100vh * 1179 / 2556));
-}
-@supports (height: 100dvh) {
-  .home { --sw: min(100vw, calc(100dvh * 1179 / 2556)); }
 }
 .home.on { display: block; }
 
+/* Skaleres efter bredden og forankres i bunden: i en PWA starter
+   visningsområdet ofte under statuslinjen, så toppen (der alligevel er
+   sort statuslinje-område) skæres af i stedet for at alt bliver mindre. */
 .home-stage {
   position: absolute;
-  left: calc(50% - var(--sw) / 2);
-  top: calc(50% - var(--sw) * 1278 / 1179);
-  width: var(--sw);
-  height: calc(var(--sw) * 2556 / 1179);
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: calc(100vw * 2556 / 1179);
   transform-origin: 50% 50%;
 }
 
