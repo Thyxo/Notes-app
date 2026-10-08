@@ -38,6 +38,22 @@ const pools = {
       "Pink", "Queen Latifah", "Reese Witherspoon", "Sandra Bullock", "Shawn Mendes", "Snoop Dogg", "Sofia Vergara", "Steven Spielberg", "Timothee Chalamet", "Whoopi Goldberg",
     ],
   },
+  kitchen: {
+    label: "køkkenting",
+    title: "100 køkkenting",
+    items: [
+      "Paletkniv", "Piskeris", "Grydeske", "Hulske", "Spatel", "Ostehøvl", "Kartoffelskræller", "Rivejern", "Dørslag", "Si",
+      "Målebæger", "Måleske", "Køkkenvægt", "Skærebræt", "Kokkekniv", "Brødkniv", "Urtekniv", "Skrællekniv", "Udbenerkniv", "Knivsliber",
+      "Kødhammer", "Kødtermometer", "Køkkenur", "Flaskeåbner", "Proptrækker", "Dåseåbner", "Nøddeknækker", "Hvidløgspresser", "Citronpresser", "Salatsleve",
+      "Salatskål", "Røreskål", "Foodprocessor", "Blender", "Stavblender", "Håndmixer", "Køkkenmaskine", "Elkedel", "Brødrister", "Kaffemaskine",
+      "Stempelkande", "Tekande", "Tesi", "Termokande", "Mikrobølgeovn", "Airfryer", "Vaffeljern", "Grillpande", "Stegepande", "Wokpande",
+      "Kasserolle", "Gryde", "Trykkoger", "Sauterpande", "Ovnfast fad", "Bageplade", "Kageform", "Muffinform", "Brødform", "Springform",
+      "Dejskraber", "Kagerulle", "Bagepapir", "Kageriste", "Piskeflødesprøjte", "Kagepensel", "Udstikker", "Sigte", "Pizzaskærer", "Pizzasten",
+      "Middagstallerken", "Dyb tallerken", "Frokosttallerken", "Desserttallerken", "Suppeskål", "Morgenmadsskål", "Serveringsfad", "Sovsekande", "Smørfad", "Tallerkenskåner",
+      "Vandglas", "Vinglas", "Ølglas", "Champagneglas", "Kaffekop", "Tekop", "Krus", "Espressokop", "Karaffel", "Snapseglas",
+      "Gaffel", "Spiseske", "Teske", "Bordkniv", "Smørkniv", "Serveringsske", "Serveringsgaffel", "Salatbestik", "Grydelap", "Viskestykke",
+    ],
+  },
 };
 
 /* ---------------- tilstand ---------------- */
