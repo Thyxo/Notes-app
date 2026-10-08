@@ -888,7 +888,9 @@ function registerEvents() {
     const typing = () => document.activeElement?.matches?.("input, textarea") ?? false;
     const sync = () => {
       if (!typing()) baseline = gap();
-      const kb = typing() ? Math.max(0, gap() - baseline) : 0;
+      /* Under 120pt er det ikke et tastatur, men iOS' faste forskel */
+      const lift = typing() ? Math.max(0, gap() - baseline) : 0;
+      const kb = lift > 120 ? lift : 0;
       document.documentElement.style.setProperty("--kb", `${kb}px`);
     };
     vv.addEventListener("resize", sync);

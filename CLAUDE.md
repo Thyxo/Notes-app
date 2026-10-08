@@ -9,7 +9,7 @@ A static, no-build, single-page web app that visually mimics Apple Notes (Danish
 - `index.html` — markup for the notes shell (sidebar, note list, editor panel, settings sheet, number pad)
 - `app.js` — all app logic and state (single file, no modules/bundler)
 - `styles.css` — all styling (CSS custom properties for light/dark theme, glassmorphism)
-- `sw.js` — service worker for offline caching (PWA), cache name `liquid-notes-v14` — **bump this version string whenever cached assets change**, otherwise installed clients won't see updates
+- `sw.js` — service worker for offline caching (PWA), cache name `liquid-notes-v15` — **bump this version string whenever cached assets change**, otherwise installed clients won't see updates
 - `manifest.webmanifest` — PWA manifest
 
 There is no `package.json`, build step, bundler, linter, or test suite. Open `index.html` directly in a browser (or serve the folder statically) to run it.
@@ -54,7 +54,7 @@ Structural things that are easy to break:
 
 ## Testing locally
 
-The service worker aggressively caches `styles.css` / `app.js`, so plain reloads serve stale assets while iterating. Either bump `CACHE_NAME` in [sw.js](sw.js), or clear it from the console:
+The service worker is network-first (cache is only the offline fallback), so a normal reload picks up new assets when online. Still bump `CACHE_NAME` in [sw.js](sw.js) when assets change; to wipe it entirely, run from the console:
 
 ```bash
 navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister()));caches.keys().then(k=>k.forEach(c=>caches.delete(c)))
