@@ -337,7 +337,7 @@ function renderNotePage() {
 
   let inner = "";
   if (note.list) {
-    inner = `<ol class="note-ol">${makeForcedList().map((item) => `<li>${esc(item)}</li>`).join("")}</ol>`;
+    inner = `<ol class="note-ol">${makeForcedList().map((item, i) => `<li><span class="n">${i + 1}.</span>${esc(item)}</li>`).join("")}</ol>`;
   } else {
     inner = (note.body || [note.preview])
       .map((line) => {
@@ -880,12 +880,21 @@ function registerEvents() {
   /* Løft bundlinjen når tastaturet vises (falsk søgefelt) */
   if (window.visualViewport) {
     const vv = window.visualViewport;
+    /* iOS-PWA'er kan rapportere en fast forskel mellem innerHeight og det
+       synlige område (fx ~60pt) uden tastatur. Den måles som nulpunkt, og
+       bundlinjen løftes kun, mens et tekstfelt har fokus. */
+    let baseline = 0;
+    const gap = () => Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    const typing = () => document.activeElement?.matches?.("input, textarea") ?? false;
     const sync = () => {
-      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      if (!typing()) baseline = gap();
+      const kb = typing() ? Math.max(0, gap() - baseline) : 0;
       document.documentElement.style.setProperty("--kb", `${kb}px`);
     };
     vv.addEventListener("resize", sync);
     vv.addEventListener("scroll", sync);
+    document.addEventListener("focusin", () => window.setTimeout(sync, 0));
+    document.addEventListener("focusout", () => window.setTimeout(sync, 0));
     sync();
   }
 }

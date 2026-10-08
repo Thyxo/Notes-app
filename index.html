@@ -117,8 +117,9 @@
           </label>
           <button class="compose" type="button" id="newNoteButton" aria-label="Ny note">
             <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M19.4 12.6v5a2.6 2.6 0 0 1-2.6 2.6H6.6A2.6 2.6 0 0 1 4 17.6V7.4a2.6 2.6 0 0 1 2.6-2.6h5" />
-              <path d="m18.1 3.1 2.8 2.8-8.7 8.7-3.6.8.8-3.6z" />
+              <path d="M19.4 11.4v6.1a2.7 2.7 0 0 1-2.7 2.7H6.5a2.7 2.7 0 0 1-2.7-2.7V7.3a2.7 2.7 0 0 1 2.7-2.7h6.2" />
+              <path d="m10.6 13.4 9.2-9.2" />
+              <path d="m20.6 3.4.5-.5" />
             </svg>
           </button>
         </div>
@@ -138,10 +139,10 @@
           <div class="nav-side right">
             <div class="gpill">
               <button type="button" aria-label="Del">
-                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12 15.2V3.4" />
-                  <path d="M8.2 7 12 3.2 15.8 7" />
-                  <path d="M7.6 9.9H6.2a2 2 0 0 0-2 2v7.1a2 2 0 0 0 2 2h11.6a2 2 0 0 0 2-2v-7.1a2 2 0 0 0-2-2h-1.4" />
+                <svg class="icon share" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 14.6V2" />
+                  <path d="M7.9 5.9 12 1.8l4.1 4.1" />
+                  <path d="M8.3 8.9H6.4a2.2 2.2 0 0 0-2.2 2.2v8.95a2.2 2.2 0 0 0 2.2 2.2h11.2a2.2 2.2 0 0 0 2.2-2.2v-8.95a2.2 2.2 0 0 0-2.2-2.2h-1.9" />
                 </svg>
               </button>
               <button type="button" aria-label="Mere">
@@ -161,11 +162,11 @@
           <div class="tools">
             <button type="button" aria-label="Tjekliste">
               <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="5" cy="7.6" r="2.7" />
-                <path d="m3.9 7.6.9.9 1.8-1.9" />
-                <circle cx="5" cy="16.6" r="2.7" />
-                <path d="M10.4 7.6h9.8" />
-                <path d="M10.4 16.6h9.8" />
+                <circle cx="5.2" cy="7.4" r="3.1" fill="currentColor" stroke="none" />
+                <path d="m3.8 7.4 1 1.05 1.9-2.1" style="stroke: var(--bg)" stroke-width="1.5" />
+                <circle cx="5.2" cy="16.6" r="2.9" />
+                <path d="M10.6 7.4h10.2" />
+                <path d="M10.6 16.6h10.2" />
               </svg>
             </button>
             <button type="button" aria-label="Vedhæft billede" id="attachButton">
@@ -175,21 +176,25 @@
             </button>
             <button type="button" aria-label="Markering">
               <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="12" r="8.7" />
-                <path d="M12 6.3 9.4 12.4 12 15.1l2.6-2.7z" />
+                <circle cx="12" cy="12" r="9.2" />
+                <path d="M8.6 17.6 12 6.9l3.4 10.7" />
+                <path d="M9.9 13.6h4.2" />
               </svg>
             </button>
             <button type="button" aria-label="Skriveværktøjer">
               <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M3.8 20.2l.9-3.5 8.9-8.9 2.6 2.6-8.9 8.9z" />
-                <path d="m17 3.2 1.1 2.5 2.5 1.1-2.5 1.1L17 10.4l-1.1-2.5-2.5-1.1 2.5-1.1z" />
+                <ellipse cx="11.6" cy="12.4" rx="9.6" ry="5.2" transform="rotate(42 11.6 12.4)" />
+                <ellipse cx="11.6" cy="12.4" rx="9.6" ry="5.2" transform="rotate(-30 11.6 12.4)" />
+                <path d="m7.4 17.2.6-2.6 8.6-8.6 2 2-8.6 8.6z" />
+                <path d="m18.2 4.4 1.6-1.6" />
               </svg>
             </button>
           </div>
           <button class="compose" type="button" aria-label="Ny note" data-new-note>
             <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M19.4 12.6v5a2.6 2.6 0 0 1-2.6 2.6H6.6A2.6 2.6 0 0 1 4 17.6V7.4a2.6 2.6 0 0 1 2.6-2.6h5" />
-              <path d="m18.1 3.1 2.8 2.8-8.7 8.7-3.6.8.8-3.6z" />
+              <path d="M19.4 11.4v6.1a2.7 2.7 0 0 1-2.7 2.7H6.5a2.7 2.7 0 0 1-2.7-2.7V7.3a2.7 2.7 0 0 1 2.7-2.7h6.2" />
+              <path d="m10.6 13.4 9.2-9.2" />
+              <path d="m20.6 3.4.5-.5" />
             </svg>
           </button>
         </div>

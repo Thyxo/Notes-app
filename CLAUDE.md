@@ -9,7 +9,7 @@ A static, no-build, single-page web app that visually mimics Apple Notes (Danish
 - `index.html` — markup for the notes shell (sidebar, note list, editor panel, settings sheet, number pad)
 - `app.js` — all app logic and state (single file, no modules/bundler)
 - `styles.css` — all styling (CSS custom properties for light/dark theme, glassmorphism)
-- `sw.js` — service worker for offline caching (PWA), cache name `liquid-notes-v13` — **bump this version string whenever cached assets change**, otherwise installed clients won't see updates
+- `sw.js` — service worker for offline caching (PWA), cache name `liquid-notes-v14` — **bump this version string whenever cached assets change**, otherwise installed clients won't see updates
 - `manifest.webmanifest` — PWA manifest
 
 There is no `package.json`, build step, bundler, linter, or test suite. Open `index.html` directly in a browser (or serve the folder statically) to run it.
