@@ -944,3 +944,18 @@ button {
   }
 }
 .field-note.diag { font-size: 11px; opacity: 0.6; }
+
+/* Værktøjsikoner klippet ud af et rigtigt iOS 26-screenshot (@3x) og brugt
+   som masker, så de følger tekstfarven. Størrelser = pixels / 3. */
+.ti {
+  display: block;
+  flex: none;
+  background: var(--glass-icon);
+  -webkit-mask: var(--m) center / contain no-repeat;
+  mask: var(--m) center / contain no-repeat;
+}
+.ti-checklist { --m: url("icons/checklist.png"); width: 26.33px; height: 23.67px; }
+.ti-clip { --m: url("icons/clip.png"); width: 22.67px; height: 25px; }
+.ti-markup { --m: url("icons/markup.png"); width: 24px; height: 24px; }
+.ti-writing { --m: url("icons/writing.png"); width: 26.67px; height: 26px; }
+.ti-compose { --m: url("icons/compose.png"); width: 23.33px; height: 23.33px; }
