@@ -51,7 +51,6 @@ const fallbackState = {
   spectatorNumber: 37,
   selectedNote: "prediction",
   images: {},
-  swipeStyle: "standard",
 };
 
 let state = loadState();
@@ -428,11 +427,6 @@ function openSettings() {
   document.querySelectorAll("input[name='inputMethod']").forEach((radio) => {
     radio.checked = radio.value === state.inputMethod;
   });
-  const swipeSelect = document.querySelector("#swipeSelect");
-  swipeSelect.innerHTML = Object.entries(SWIPE_STYLES)
-    .map(([id, label]) => `<option value="${id}">${label}</option>`)
-    .join("");
-  swipeSelect.value = SWIPE_STYLES[state.swipeStyle] ? state.swipeStyle : "standard";
   currentNumber.textContent = state.spectatorNumber;
   fitViewport();
   document.querySelector("#viewportDiag").textContent =
@@ -583,14 +577,14 @@ function homeCellAt(clientX, clientY) {
   return { row, col, y };
 }
 
-/* ---- swipe-motor: flere "følelser" man kan vælge i det hemmelige ark ---- */
+/* ---- swipe-motor: iOS-fjeder ----
+   Fjederen (UIKit-stil, uden bounce) regnes ud på forhånd og afspilles som en
+   compositor-animation med linear()-easing, så den kører på GPU'en i fuld
+   billedfrekvens i stedet for at blive tegnet frame for frame fra JS. */
 
-const SWIPE_STYLES = {
-  standard: "Standard (som før)",
-  spring: "iOS-fjeder",
-  bouncy: "Blød fjeder med lille bounce",
-  glide: "Glid (følger fingerens fart)",
-};
+const SPRING_RESPONSE = 0.28; /* sek. — lavere er hurtigere */
+const SPRING_DAMPING = 1;
+const supportsLinearEasing = window.CSS?.supports?.("animation-timing-function", "linear(0, 1)") ?? false;
 
 let homeOffset = 0;
 let homeAnim = null;
@@ -600,120 +594,105 @@ function renderHomeOffset(px) {
   homeTrack.style.transform = `translate3d(${px}px, 0, 0)`;
 }
 
+function readTrackOffset() {
+  return new DOMMatrixReadOnly(getComputedStyle(homeTrack).transform).m41;
+}
+
+/* Aktuel position, også midt i en animation (så man kan gribe siden) */
+function currentHomeOffset() {
+  return homeAnim ? readTrackOffset() : homeOffset;
+}
+
 function stopHomeAnim() {
   if (!homeAnim) return;
+  const now = readTrackOffset();
   homeAnim.stop();
   homeAnim = null;
+  renderHomeOffset(now);
 }
 
-/* Aktuel position, også midt i en CSS-transition (så man kan gribe siden) */
-function currentHomeOffset() {
-  if (homeAnim?.kind === "css") {
-    const m = new DOMMatrixReadOnly(getComputedStyle(homeTrack).transform);
-    return m.m41;
-  }
-  return homeOffset;
-}
-
-function setHomeOffset(px, animate, duration = 420) {
+function setHomeOffset(px) {
   stopHomeAnim();
-  homeTrack.style.transition = animate ? `transform ${duration}ms cubic-bezier(0.22, 0.9, 0.3, 1)` : "none";
+  homeTrack.style.transition = "none";
   renderHomeOffset(px);
 }
 
-function cssAnim(to, duration, easing) {
-  homeTrack.style.transition = `transform ${duration}ms ${easing}`;
-  renderHomeOffset(to);
-  const timer = window.setTimeout(() => {
-    homeTrack.style.transition = "none";
-    if (homeAnim?.timer === timer) homeAnim = null;
-  }, duration + 30);
-  homeAnim = {
-    kind: "css",
-    timer,
-    stop() {
-      const now = currentHomeOffsetFromStyle();
-      window.clearTimeout(timer);
-      homeTrack.style.transition = "none";
-      renderHomeOffset(now);
-    },
-  };
-}
-
-function currentHomeOffsetFromStyle() {
-  const m = new DOMMatrixReadOnly(getComputedStyle(homeTrack).transform);
-  return m.m41;
-}
-
-/* Dæmpet fjeder (som UIKit): response = periode i sek., damping = 1 er uden bounce */
-function springAnim(from, to, velocity, response, damping) {
-  homeTrack.style.transition = "none";
-  const k = (2 * Math.PI / response) ** 2;
-  const c = (4 * Math.PI * damping) / response;
+/* Simulerer fjederen og returnerer positioner pr. ~8 ms til den falder til ro */
+function springSamples(from, to, velocity) {
+  const k = (2 * Math.PI / SPRING_RESPONSE) ** 2;
+  const c = (4 * Math.PI * SPRING_DAMPING) / SPRING_RESPONSE;
+  const h = 1 / 960;
+  const every = 8; /* 960 Hz-trin → én prøve pr. 8,3 ms */
   let x = from;
-  let v = velocity * 1000; /* px/ms → px/s */
-  let last = performance.now();
+  let v = velocity * 1000;
+  const samples = [x];
+  for (let i = 1; i < 960 * 1.5; i += 1) {
+    v += (-k * (x - to) - c * v) * h;
+    x += v * h;
+    if (i % every === 0) {
+      samples.push(x);
+      if (Math.abs(x - to) < 0.2 && Math.abs(v) < 6) break;
+    }
+  }
+  samples.push(to);
+  return { samples, duration: ((samples.length - 1) * every * 1000) / 960 };
+}
+
+function animateHomeTo(to, velocity) {
+  stopHomeAnim();
+  homeTrack.style.transition = "none";
+  const from = homeOffset;
+  if (Math.abs(to - from) < 0.5) {
+    renderHomeOffset(to);
+    return;
+  }
+  const { samples, duration } = springSamples(from, to, velocity);
+
+  if (supportsLinearEasing && homeTrack.animate) {
+    const points = samples.map((x) => ((x - from) / (to - from)).toFixed(4)).join(", ");
+    renderHomeOffset(to);
+    const animation = homeTrack.animate(
+      [{ transform: `translate3d(${from}px, 0, 0)` }, { transform: `translate3d(${to}px, 0, 0)` }],
+      { duration, easing: `linear(${points})` },
+    );
+    const entry = { stop: () => animation.cancel() };
+    homeAnim = entry;
+    animation.onfinish = () => {
+      if (homeAnim === entry) homeAnim = null;
+    };
+    return;
+  }
+
+  /* Reserve uden linear(): afspil prøverne med rAF, og land på målet hvis rAF ikke fyrer */
+  const start = performance.now();
   let raf = 0;
   let alive = true;
   const step = (now) => {
     if (!alive) return;
-    let dt = Math.min(0.064, (now - last) / 1000);
-    last = now;
-    while (dt > 0) {
-      const h = Math.min(dt, 1 / 240);
-      v += (-k * (x - to) - c * v) * h;
-      x += v * h;
-      dt -= h;
-    }
-    if (Math.abs(x - to) < 0.25 && Math.abs(v) < 8) {
-      renderHomeOffset(to);
+    const i = Math.min(samples.length - 1, Math.floor(((now - start) / duration) * (samples.length - 1)));
+    renderHomeOffset(samples[i]);
+    if (i >= samples.length - 1) {
       alive = false;
       homeAnim = null;
       return;
     }
-    renderHomeOffset(x);
     raf = requestAnimationFrame(step);
   };
   raf = requestAnimationFrame(step);
-  /* Sikkerhedsnet: hvis siden ikke tegnes (rAF fyrer ikke), land på målet */
   const fallback = window.setTimeout(() => {
-    if (alive) {
-      alive = false;
-      cancelAnimationFrame(raf);
-      renderHomeOffset(to);
-      homeAnim = null;
-    }
-  }, 1600);
+    if (!alive) return;
+    alive = false;
+    cancelAnimationFrame(raf);
+    renderHomeOffset(to);
+    homeAnim = null;
+  }, duration + 300);
   homeAnim = {
-    kind: "spring",
     stop() {
       alive = false;
       cancelAnimationFrame(raf);
       window.clearTimeout(fallback);
     },
   };
-}
-
-function animateHomeTo(to, velocity) {
-  stopHomeAnim();
-  const from = homeOffset;
-  const distance = to - from;
-  const style = SWIPE_STYLES[state.swipeStyle] ? state.swipeStyle : "standard";
-
-  if (style === "spring") return springAnim(from, to, velocity, 0.34, 1);
-  if (style === "bouncy") return springAnim(from, to, velocity, 0.46, 0.8);
-
-  if (style === "glide") {
-    /* Kurvens start-hældning sættes, så den fortsætter med fingerens fart */
-    const duration = 420;
-    const slope = Math.abs(distance) > 1 ? (velocity * duration) / distance : 0;
-    const x1 = 0.18;
-    const y1 = Math.max(0, Math.min(1, slope * x1));
-    return cssAnim(to, duration, `cubic-bezier(${x1}, ${y1.toFixed(3)}, 0.24, 1)`);
-  }
-
-  const duration = Math.round(Math.max(260, Math.min(480, 260 + Math.abs(distance) * 0.6)));
-  return cssAnim(to, duration, "cubic-bezier(0.22, 0.9, 0.3, 1)");
 }
 
 function setHomeDot(index) {
@@ -729,7 +708,7 @@ function enterPerform() {
   homeStage.style.opacity = "";
   home.classList.add("on");
   home.setAttribute("aria-hidden", "false");
-  setHomeOffset(0, false);
+  setHomeOffset(0);
   setHomeDot(0);
   syncPerformButton();
 }
@@ -1041,7 +1020,6 @@ function registerEvents() {
     state.category = categorySelect.value;
     state.prediction = predictionSelect.value;
     state.inputMethod = document.querySelector("input[name='inputMethod']:checked")?.value || "longpress";
-    state.swipeStyle = document.querySelector("#swipeSelect").value || "standard";
     saveState();
     closeSettings();
     renderAll();
