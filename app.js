@@ -401,6 +401,9 @@ function openSettings() {
     radio.checked = radio.value === state.inputMethod;
   });
   currentNumber.textContent = state.spectatorNumber;
+  fitViewport();
+  document.querySelector("#viewportDiag").textContent =
+    `Skærm ${viewportInfo.screen} · inner ${viewportInfo.inner} · vv ${viewportInfo.vv} · lvh ${viewportInfo.lvh} · bruger ${viewportInfo.used}`;
   settingsOpenedAt = Date.now();
   settingsSheet.classList.add("open");
   settingsSheet.setAttribute("aria-hidden", "false");
@@ -713,7 +716,7 @@ function launchNotes() {
   renderAll();
 
   const W = window.innerWidth;
-  const H = window.innerHeight;
+  const H = app.offsetHeight;
   const k = homeScale();
   const stageRect = homeStage.getBoundingClientRect();
   const size = HOME_ICON * k;
@@ -900,6 +903,51 @@ function registerEvents() {
     sync();
   }
 }
+
+/* ---------------- vindueshøjde (iOS 26-PWA) ----------------
+   I hjemmeskærm-apps kan iOS 26 give et layout-vindue, der slutter ~60pt
+   før skærmens bund, selv om webvisningen går helt ned. Vi tager den
+   største højde, browseren selv kender, og i standalone-tilstand den
+   fulde skærm minus statuslinjen, når hullet ligner netop den fejl. */
+
+const lvhProbe = document.createElement("div");
+lvhProbe.style.cssText = "position:fixed;top:0;left:0;width:1px;height:100lvh;visibility:hidden;pointer-events:none";
+document.body.appendChild(lvhProbe);
+let viewportInfo = {};
+
+function statusBarHeight(screenH) {
+  if (screenH === 874 || screenH === 956) return 62;
+  if (screenH === 852 || screenH === 932) return 59;
+  return 47;
+}
+
+function fitViewport() {
+  const vv = window.visualViewport;
+  const candidates = {
+    inner: window.innerHeight,
+    client: document.documentElement.clientHeight,
+    vv: vv ? Math.round(vv.height + vv.offsetTop) : 0,
+    lvh: lvhProbe.offsetHeight,
+  };
+  let height = Math.max(...Object.values(candidates));
+  const standalone = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+  const portrait = window.screen.height > window.screen.width;
+  let full = 0;
+  if (standalone && portrait) {
+    full = window.screen.height - statusBarHeight(window.screen.height);
+    const missing = full - height;
+    if (missing > 20 && missing < 90) height = full;
+  }
+  document.documentElement.style.setProperty("--app-h", `${height}px`);
+  viewportInfo = { ...candidates, screen: window.screen.height, full, used: height, standalone };
+}
+
+fitViewport();
+["resize", "orientationchange", "pageshow", "focusout"].forEach((type) =>
+  window.addEventListener(type, () => window.setTimeout(fitViewport, type === "focusout" ? 350 : 0)),
+);
+window.visualViewport?.addEventListener("resize", fitViewport);
+document.addEventListener("visibilitychange", () => window.setTimeout(fitViewport, 100));
 
 /* ---------------- start ---------------- */
 
