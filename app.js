@@ -385,8 +385,35 @@ function syncScrolled(scroller) {
   screen.classList.toggle("scrolled", scroller.scrollTop > 34);
 }
 
+/* Kort, fast scroll-indikator som i iOS (den native er skjult i CSS) */
+function attachScrollIndicator(scroller) {
+  const bar = document.createElement("div");
+  bar.className = "sbar";
+  scroller.parentElement.appendChild(bar);
+  let hideTimer = null;
+  return () => {
+    const range = scroller.scrollHeight - scroller.clientHeight;
+    if (range <= 0) return;
+    const top = scroller.offsetTop + 4;
+    const track = scroller.clientHeight - 4 - 84; /* fri af den flydende bundlinje */
+    const progress = Math.max(0, Math.min(1, scroller.scrollTop / range));
+    bar.style.transform = `translate3d(0, ${top + progress * (track - bar.offsetHeight)}px, 0)`;
+    bar.classList.add("on");
+    window.clearTimeout(hideTimer);
+    hideTimer = window.setTimeout(() => bar.classList.remove("on"), 650);
+  };
+}
+
 document.querySelectorAll("[data-scroll]").forEach((scroller) => {
-  scroller.addEventListener("scroll", () => syncScrolled(scroller), { passive: true });
+  const indicate = attachScrollIndicator(scroller);
+  scroller.addEventListener(
+    "scroll",
+    () => {
+      syncScrolled(scroller);
+      indicate();
+    },
+    { passive: true },
+  );
 });
 
 /* ---------------- performer-ark ---------------- */

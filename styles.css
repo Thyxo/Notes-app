@@ -50,6 +50,7 @@
   --placeholder: rgba(60, 60, 67, 0.6);
   --edge: 242, 242, 247;
   --note-text: #000000;
+  --sbar: rgba(0, 0, 0, 0.35);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -71,6 +72,7 @@
     --placeholder: #a3a3a3;
     --edge: 0, 0, 0;
     --note-text: #dcdcdc;
+    --sbar: rgba(255, 255, 255, 0.38);
     --glass-blur: 1.5px;
     --nav-bg: rgba(0, 0, 0, 0.6);
     --sheet: rgba(28, 28, 30, 0.82);
@@ -318,10 +320,28 @@ button {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   padding-bottom: 116px;
+  scrollbar-width: none;
 }
+.scroll::-webkit-scrollbar { display: none; }
+
+/* Egen scroll-indikator: fast iOS-længde (~51pt) i stedet for den lange,
+   der afslører, at listen kun har få noter. Vises kun mens man scroller. */
+.sbar {
+  position: absolute;
+  right: 3px;
+  top: 0;
+  z-index: 11;
+  width: 3px;
+  height: 51px;
+  border-radius: 1.5px;
+  background: var(--sbar);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.sbar.on { opacity: 1; transition: opacity 0.08s ease; }
 
 .large-title {
   margin: 0;
