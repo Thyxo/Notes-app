@@ -215,9 +215,12 @@
         </label>
         <label class="field">
           <span>Forudsigelse</span>
-          <select id="predictionSelect"></select>
+          <input id="predictionInput" type="text" autocomplete="off" autocorrect="off"
+                 autocapitalize="words" spellcheck="false" enterkeyhint="done" placeholder="Skriv eller søg" />
         </label>
+        <div class="suggest" id="predictionSuggest"></div>
       </div>
+      <p class="field-note pred-status" id="predictionStatus"></p>
 
       <p class="field-note">Hemmelig input</p>
       <div class="field-card">

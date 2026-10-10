@@ -286,7 +286,9 @@ const navTitleEditor = document.querySelector("#navTitleEditor");
 const settingsSheet = document.querySelector("#settingsSheet");
 const scrim = document.querySelector("#scrim");
 const categorySelect = document.querySelector("#categorySelect");
-const predictionSelect = document.querySelector("#predictionSelect");
+const predictionInput = document.querySelector("#predictionInput");
+const predictionSuggest = document.querySelector("#predictionSuggest");
+const predictionStatus = document.querySelector("#predictionStatus");
 const currentNumber = document.querySelector("#currentNumber");
 const numberPad = document.querySelector("#numberPad");
 const padGrid = document.querySelector("#padGrid");
@@ -439,6 +441,7 @@ function openSettings() {
     .map(([id, category]) => `<option value="${id}">${capitalize(category.label)}</option>`)
     .join("");
   categorySelect.value = state.category;
+  predictionInput.value = state.prediction || "";
   syncPredictionSelect();
   document.querySelectorAll("input[name='inputMethod']").forEach((radio) => {
     radio.checked = radio.value === state.inputMethod;
@@ -459,10 +462,40 @@ function closeSettings() {
   scrim.classList.remove("on");
 }
 
+/* Forudsigelsen skrives frit. Findes ordet i puljen (uanset store/små bogstaver),
+   bruges puljens stavemåde; ellers bruges det egne ord, og makeForcedList
+   dropper automatisk ét puljeord, så listen stadig er 100 lang. */
+function sheetCategory() {
+  return pools[categorySelect.value] || getCategory();
+}
+
+function resolvePrediction(text) {
+  const typed = text.trim().replace(/\s+/g, " ");
+  if (!typed) return sheetCategory().items[0];
+  const match = sheetCategory().items.find((item) => item.toLocaleLowerCase("da") === typed.toLocaleLowerCase("da"));
+  return match || typed;
+}
+
 function syncPredictionSelect() {
-  const category = pools[categorySelect.value] || getCategory();
-  predictionSelect.innerHTML = category.items.map((item) => `<option value="${esc(item)}">${esc(item)}</option>`).join("");
-  predictionSelect.value = category.items.includes(state.prediction) ? state.prediction : category.items[0];
+  const items = sheetCategory().items;
+  if (!predictionInput.value.trim()) predictionInput.value = items.includes(state.prediction) ? state.prediction : items[0];
+  updatePredictionSuggest(false);
+}
+
+function updatePredictionSuggest(show = true) {
+  const items = sheetCategory().items;
+  const query = predictionInput.value.trim().toLocaleLowerCase("da");
+  const resolved = resolvePrediction(predictionInput.value);
+  const own = !items.includes(resolved);
+  predictionStatus.textContent = own ? "Eget ord – ét ord fra listen udskiftes" : "Findes på listen";
+  predictionStatus.classList.toggle("own", own);
+
+  const starts = items.filter((item) => item.toLocaleLowerCase("da").startsWith(query));
+  const contains = items.filter((item) => !starts.includes(item) && item.toLocaleLowerCase("da").includes(query));
+  const hits = (query ? [...starts, ...contains] : items).filter((item) => item !== resolved).slice(0, 6);
+  predictionSuggest.innerHTML = show
+    ? hits.map((item) => `<button type="button" data-word="${esc(item)}">${esc(item)}</button>`).join("")
+    : "";
 }
 
 function capitalize(text) {
@@ -1027,14 +1060,42 @@ function registerEvents() {
     });
   });
 
-  categorySelect.addEventListener("change", syncPredictionSelect);
+  categorySelect.addEventListener("change", () => {
+    /* Et ord fra en anden pulje nulstilles; et helt eget ord bevares */
+    const typed = predictionInput.value.trim().toLocaleLowerCase("da");
+    const fromPool = Object.values(pools).some((pool) =>
+      pool.items.some((item) => item.toLocaleLowerCase("da") === typed),
+    );
+    if (fromPool) predictionInput.value = "";
+    syncPredictionSelect();
+  });
+  predictionInput.addEventListener("input", () => updatePredictionSuggest());
+  predictionInput.addEventListener("focus", () => {
+    predictionInput.select();
+    updatePredictionSuggest();
+  });
+  predictionInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") predictionInput.blur();
+  });
+  predictionInput.addEventListener("blur", () => {
+    /* vent, så et tryk på et forslag når at blive registreret */
+    setTimeout(() => updatePredictionSuggest(false), 150);
+  });
+  predictionSuggest.addEventListener("pointerdown", (event) => event.preventDefault());
+  predictionSuggest.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-word]");
+    if (!button) return;
+    predictionInput.value = button.dataset.word;
+    predictionInput.blur();
+    updatePredictionSuggest(false);
+  });
   scrim.addEventListener("click", () => {
     /* Det tryk, der åbnede arket, må ikke lukke det igen via sit eget click */
     if (Date.now() - settingsOpenedAt > 400) closeSettings();
   });
   const applySettings = () => {
     state.category = categorySelect.value;
-    state.prediction = predictionSelect.value;
+    state.prediction = resolvePrediction(predictionInput.value);
     state.inputMethod = document.querySelector("input[name='inputMethod']:checked")?.value || "longpress";
     saveState();
     closeSettings();

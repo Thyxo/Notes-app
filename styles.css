@@ -735,6 +735,36 @@ button {
   -webkit-appearance: none;
 }
 
+.field input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  outline: none;
+  font: inherit;
+  font-size: 17px;
+  color: var(--accent);
+  text-align: right;
+}
+.field input[type="text"]::placeholder { color: var(--label3); }
+
+.suggest:empty { display: none; }
+.suggest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 2px 14px 12px;
+}
+.suggest button {
+  padding: 7px 12px;
+  border-radius: 16px;
+  background: var(--fill, rgba(120, 120, 128, 0.24));
+  color: var(--label);
+  font-size: 15px;
+}
+.field-note.pred-status { margin-top: 6px; text-transform: none; letter-spacing: 0; }
+.field-note.pred-status.own { color: var(--accent); }
+
 .field.radio { cursor: pointer; }
 .field.radio > span { flex: 1; }
 .field.radio input { position: absolute; opacity: 0; pointer-events: none; }
