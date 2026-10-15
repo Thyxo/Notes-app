@@ -54,6 +54,16 @@ const pools = {
       "Gaffel", "Spiseske", "Teske", "Bordkniv", "Smørkniv", "Serveringsske", "Serveringsgaffel", "Salatbestik", "Grydelap", "Viskestykke",
     ],
   },
+  cards: {
+    label: "spillekort",
+    title: "52 kort",
+    items: [
+      "Hjerter es", "Hjerter 2", "Hjerter 3", "Hjerter 4", "Hjerter 5", "Hjerter 6", "Hjerter 7", "Hjerter 8", "Hjerter 9", "Hjerter 10", "Hjerter knægt", "Hjerter dame", "Hjerter konge",
+      "Ruder es", "Ruder 2", "Ruder 3", "Ruder 4", "Ruder 5", "Ruder 6", "Ruder 7", "Ruder 8", "Ruder 9", "Ruder 10", "Ruder knægt", "Ruder dame", "Ruder konge",
+      "Klør es", "Klør 2", "Klør 3", "Klør 4", "Klør 5", "Klør 6", "Klør 7", "Klør 8", "Klør 9", "Klør 10", "Klør knægt", "Klør dame", "Klør konge",
+      "Spar es", "Spar 2", "Spar 3", "Spar 4", "Spar 5", "Spar 6", "Spar 7", "Spar 8", "Spar 9", "Spar 10", "Spar knægt", "Spar dame", "Spar konge",
+    ],
+  },
 };
 
 /* ---------------- tilstand ---------------- */
@@ -118,7 +128,8 @@ function random(seed) {
 function makeForcedList() {
   const category = getCategory();
   const prediction = state.prediction || category.items[0];
-  const number = Math.max(1, Math.min(100, Number(state.spectatorNumber) || 1));
+  const size = Math.min(100, category.items.length);
+  const number = Math.max(1, Math.min(size, Number(state.spectatorNumber) || 1));
   const rand = random(seedFrom(`${state.category}:${prediction}:${number}`));
   const rest = category.items.filter((item) => item !== prediction);
 
@@ -128,9 +139,11 @@ function makeForcedList() {
     [rest[i], rest[j]] = [rest[j], rest[i]];
   }
 
-  const list = rest.slice(0, 99);
+  /* listen er lige så lang som puljen (100 ord, 52 kort); et eget ord
+     skubber ét puljeord ud */
+  const list = rest.slice(0, size - 1);
   list.splice(number - 1, 0, prediction);
-  return list.slice(0, 100);
+  return list;
 }
 
 /* ---------------- indhold ---------------- */
@@ -176,7 +189,7 @@ function getNotes() {
       id: "hundred",
       title: category.title,
       date: "19/7/2026",
-      preview: `En rolig liste med 100 ${category.label}, gemt i noter.`,
+      preview: `En rolig liste med ${Math.min(100, category.items.length)} ${category.label}, gemt i noter.`,
       group: "pinned",
       stamp: "19. juli 2026 kl. 20.46",
       list: true,
@@ -464,7 +477,7 @@ function closeSettings() {
 
 /* Forudsigelsen skrives frit. Findes ordet i puljen (uanset store/små bogstaver),
    bruges puljens stavemåde; ellers bruges det egne ord, og makeForcedList
-   dropper automatisk ét puljeord, så listen stadig er 100 lang. */
+   dropper automatisk ét puljeord, så listen beholder puljens længde. */
 function sheetCategory() {
   return pools[categorySelect.value] || getCategory();
 }
