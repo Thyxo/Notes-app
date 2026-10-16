@@ -74,6 +74,7 @@ const fallbackState = {
   category: "animals",
   prediction: "Tiger",
   inputMethod: "longpress",
+  homeMode: "default",
   spectatorNumber: 37,
   selectedNote: "prediction",
   images: {},
@@ -300,6 +301,7 @@ const settingsSheet = document.querySelector("#settingsSheet");
 const scrim = document.querySelector("#scrim");
 const categorySelect = document.querySelector("#categorySelect");
 const predictionInput = document.querySelector("#predictionInput");
+const homeModeSelect = document.querySelector("#homeModeSelect");
 const predictionSuggest = document.querySelector("#predictionSuggest");
 const predictionStatus = document.querySelector("#predictionStatus");
 const currentNumber = document.querySelector("#currentNumber");
@@ -460,6 +462,8 @@ function openSettings() {
     radio.checked = radio.value === state.inputMethod;
   });
   currentNumber.textContent = state.spectatorNumber;
+  homeModeSelect.querySelector("[value='custom']").disabled = !customHome;
+  homeModeSelect.value = state.homeMode === "custom" && customHome ? "custom" : "default";
   fitViewport();
   document.querySelector("#viewportDiag").textContent =
     `Skærm ${viewportInfo.screen} · inner ${viewportInfo.inner} · vv ${viewportInfo.vv} · lvh ${viewportInfo.lvh} · bruger ${viewportInfo.used}`;
@@ -593,27 +597,53 @@ const homeTrack = document.querySelector("#homeTrack");
 const homePress = document.querySelector("#homePress");
 const homeDots = [...document.querySelectorAll("#homeDots img")];
 
-/* Mål i screenshot-pixels (1179 bred, ikon-laget starter ved y=140) */
-const HOME_W = 1179;
-const HOME_PAGES_TOP = 140;
-const HOME_PAGES_H = 1900;
-const HOME_DOCK_TOP = 2140;
-const HOME_ICON = 225;
-const ICON_COLS = [58, 337, 618, 897];
-const ICON_ROWS = [245, 524, 803, 1082, 1361, 1640];
-const OCCUPIED = [
-  ["1111", "1111", "1111", "1111", "1111", "1111"],
-  ["1111", "1111", "1111", "1111", "1111", "1111"],
-  ["1111", "1100", "0000", "1110", "1111", "1111"],
-];
-/* [række, kolonne] → ciffer. De ni nederste i et 3×3 + 0 over midten. Ens på side 1 og 2. */
-const DIGIT_CELLS = {
-  "2,2": 0,
-  "3,1": 1, "3,2": 2, "3,3": 3,
-  "4,1": 4, "4,2": 5, "4,3": 6,
-  "5,1": 7, "5,2": 8, "5,3": 9,
+/* Geometri i screenshot-pixels. Standarden er målt på rigtige 1179×2556-
+   screenshots på sort baggrund; en egen hjemmeskærm (se "egen hjemmeskærm"
+   længere nede) har samme form, men er målt automatisk ud fra brugerens
+   egne screenshots. rows/cols er ikonernes øverste/venstre kant. */
+const DEFAULT_HOME = {
+  W: 1179,
+  H: 2556,
+  bg: "#000000",
+  pagesTop: 140,
+  pagesH: 1900,
+  dotsTop: 2050,
+  dotsH: 80,
+  dockTop: 2140,
+  dockH: 416,
+  icon: 225,
+  cols: [58, 337, 618, 897],
+  rows: [245, 524, 803, 1082, 1361, 1640],
+  occupied: [
+    ["1111", "1111", "1111", "1111", "1111", "1111"],
+    ["1111", "1111", "1111", "1111", "1111", "1111"],
+    ["1111", "1100", "0000", "1110", "1111", "1111"],
+  ],
+  notes: { page: 2, row: 3, col: 2 },
+  src: {
+    pages: ["home/page1.webp", "home/page2.webp", "home/page3.webp"],
+    dots: ["home/dots1.png", "home/dots2.png", "home/dots3.png"],
+    dock: "home/dock.webp",
+    noter: "home/noter.png",
+  },
 };
-const NOTES_CELL = { page: 2, row: 3, col: 2 };
+let homeGeo = DEFAULT_HOME;
+
+/* Ciffer for et felt: de ni nederste i højre 3×3-blok (1–9) og 0 over
+   midten af den. Regnes fra bunden, så det virker uanset antal rækker. */
+function digitAt(cell) {
+  if (!cell) return undefined;
+  const last = homeGeo.rows.length - 1;
+  const fromTop = cell.row - (last - 2);
+  if (fromTop >= 0 && fromTop <= 2 && cell.col >= 1 && cell.col <= 3) return fromTop * 3 + cell.col;
+  if (cell.row === last - 3 && cell.col === 2) return 0;
+  return undefined;
+}
+
+function isNotesCell(cell) {
+  const notes = homeGeo.notes;
+  return Boolean(cell && homePage === notes.page && cell.row === notes.row && cell.col === notes.col);
+}
 
 let homePage = 0;
 let homeDigits = [null, null];
@@ -624,17 +654,19 @@ function isPerforming() {
 }
 
 function homeScale() {
-  return homeStage.getBoundingClientRect().width / HOME_W;
+  return homeStage.getBoundingClientRect().width / homeGeo.W;
 }
 
 function homeCellAt(clientX, clientY) {
   const rect = homeStage.getBoundingClientRect();
-  const k = rect.width / HOME_W;
+  const { W, cols, rows, icon } = homeGeo;
+  const k = rect.width / W;
   const x = (clientX - rect.left) / k;
   const y = (clientY - rect.top) / k;
-  const half = (ICON_COLS[1] - ICON_COLS[0]) / 2;
-  const col = ICON_COLS.findIndex((left) => Math.abs(x - (left + HOME_ICON / 2)) <= half);
-  const row = ICON_ROWS.findIndex((top) => Math.abs(y - (top + HOME_ICON / 2)) <= half);
+  const colHalf = (cols[1] - cols[0]) / 2;
+  const rowHalf = (rows[1] - rows[0]) / 2;
+  const col = cols.findIndex((left) => Math.abs(x - (left + icon / 2)) <= colHalf);
+  const row = rows.findIndex((top) => Math.abs(y - (top + icon / 2)) <= rowHalf);
   if (col < 0 || row < 0) return null;
   return { row, col, y };
 }
@@ -770,6 +802,9 @@ function enterPerform() {
   homeStage.style.opacity = "";
   home.classList.add("on");
   home.setAttribute("aria-hidden", "false");
+  /* Området bag statuslinjen skal have hjemmeskærmens farve */
+  document.documentElement.style.background = homeGeo.bg;
+  document.body.style.background = homeGeo.bg;
   setHomeOffset(0);
   setHomeDot(0);
   syncPerformButton();
@@ -778,6 +813,8 @@ function enterPerform() {
 function exitPerform() {
   home.classList.remove("on");
   home.setAttribute("aria-hidden", "true");
+  document.documentElement.style.background = "";
+  document.body.style.background = "";
   homePress.classList.remove("on");
   syncPerformButton();
 }
@@ -787,9 +824,10 @@ function syncPerformButton() {
 }
 
 function showPress(cell) {
-  if (!cell || OCCUPIED[homePage][cell.row][cell.col] !== "1") return;
-  homePress.style.left = `${(ICON_COLS[cell.col] / HOME_W) * 100}%`;
-  homePress.style.top = `${((ICON_ROWS[cell.row] - HOME_PAGES_TOP) / HOME_PAGES_H) * 100}%`;
+  const g = homeGeo;
+  if (!cell || g.occupied[homePage]?.[cell.row]?.[cell.col] !== "1") return;
+  homePress.style.left = `${(g.cols[cell.col] / g.W) * 100}%`;
+  homePress.style.top = `${((g.rows[cell.row] - g.pagesTop) / g.pagesH) * 100}%`;
   homePress.classList.add("on");
 }
 
@@ -815,7 +853,7 @@ function homePointerDown(event) {
     lock: null,
     width,
     cell,
-    digit: cell ? DIGIT_CELLS[`${cell.row},${cell.col}`] : undefined,
+    digit: digitAt(cell),
   };
   try {
     homeStage.setPointerCapture(event.pointerId);
@@ -913,16 +951,9 @@ function homePointerUp(event) {
 
     /* Tomme områder (over/under ikon-gridet, ikke docken) tæller med i de hemmelige 3 tryk */
     const stageTop = homeStage.getBoundingClientRect().top;
-    if (!cell && event.clientY - stageTop < HOME_DOCK_TOP * homeScale()) handleSecretTap();
+    if (!cell && event.clientY - stageTop < (homeGeo.dockTop ?? homeGeo.dotsTop) * homeScale()) handleSecretTap();
 
-    if (
-      cell &&
-      homePage === NOTES_CELL.page &&
-      cell.row === NOTES_CELL.row &&
-      cell.col === NOTES_CELL.col
-    ) {
-      launchNotes();
-    }
+    if (isNotesCell(cell)) launchNotes();
   }
 }
 
@@ -956,9 +987,9 @@ function launchNotes() {
   const H = app.offsetHeight;
   const k = homeScale();
   const stageRect = homeStage.getBoundingClientRect();
-  const size = HOME_ICON * k;
-  const iconLeft = stageRect.left + ICON_COLS[NOTES_CELL.col] * k;
-  const iconTop = stageRect.top + ICON_ROWS[NOTES_CELL.row] * k;
+  const size = homeGeo.icon * k;
+  const iconLeft = stageRect.left + homeGeo.cols[homeGeo.notes.col] * k;
+  const iconTop = stageRect.top + homeGeo.rows[homeGeo.notes.row] * k;
   const s = size / W;
   /* Et kvadrat midt i appen skaleres ned, så det dækker ikonet præcist */
   const a = (H - W) / 2;
@@ -966,6 +997,7 @@ function launchNotes() {
 
   const icon = document.createElement("div");
   icon.className = "launch-icon";
+  icon.style.backgroundImage = `url("${homeGeo.src.noter}")`;
   icon.style.top = `${a}px`;
   icon.style.width = `${W}px`;
   icon.style.height = `${W}px`;
@@ -1003,6 +1035,738 @@ function launchNotes() {
     app.style.webkitClipPath = "";
     exitPerform();
   }, 560);
+}
+
+/* ---------------- egen hjemmeskærm ----------------
+   Performeren uploader 3 screenshots af sin egen hjemmeskærm (side 1–3),
+   taget med en helt ensfarvet baggrund. Fordi baggrunden er ensfarvet, kan
+   ikon-laget glide som ét billede, ligesom på den rigtige iPhone, hvor kun
+   ikonerne bevæger sig. Alt måles automatisk ud fra billederne:
+   baggrundsfarve, statuslinje, ikongitter og prikker/dock. Det hele gemmes
+   lokalt i IndexedDB (billederne er for store til localStorage). */
+
+const BG_TOL = 22; /* max kanalafvigelse fra baggrunden (tåler JPEG-støj) */
+const DIFF_TOL = 48; /* forskel mellem to sider, der tæller som "ændret" */
+
+let customHome = null;
+let homeObjectUrls = [];
+
+function applyHomeGeo(geo) {
+  homeGeo = geo;
+  const pct = (value, of) => `${(value / of) * 100}%`;
+  const style = home.style;
+  style.setProperty("--home-ratio", String(geo.H / geo.W));
+  style.setProperty("--home-bg", geo.bg);
+  style.setProperty("--pages-top", pct(geo.pagesTop, geo.H));
+  style.setProperty("--pages-h", pct(geo.pagesH, geo.H));
+  style.setProperty("--dots-top", pct(geo.dotsTop, geo.H));
+  style.setProperty("--dots-h", pct(geo.dotsH, geo.H));
+  homeTrack.querySelectorAll("img").forEach((img, i) => {
+    if (img.getAttribute("src") !== geo.src.pages[i]) img.src = geo.src.pages[i];
+  });
+  homeDots.forEach((img, i) => {
+    if (img.getAttribute("src") !== geo.src.dots[i]) img.src = geo.src.dots[i];
+  });
+  const dock = document.querySelector(".home-dock");
+  dock.hidden = !geo.src.dock;
+  if (geo.src.dock) {
+    if (dock.getAttribute("src") !== geo.src.dock) dock.src = geo.src.dock;
+    style.setProperty("--dock-top", pct(geo.dockTop, geo.H));
+    style.setProperty("--dock-h", pct(geo.dockH, geo.H));
+  }
+  homePress.style.width = pct(geo.icon, geo.W);
+  homePress.style.height = pct(geo.icon, geo.pagesH);
+}
+
+function syncHomeGeo() {
+  applyHomeGeo(state.homeMode === "custom" && customHome ? customHome : DEFAULT_HOME);
+}
+
+/* ---- lager (IndexedDB) ---- */
+
+function homeDb(mode, action) {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) {
+      reject(new Error("IndexedDB findes ikke"));
+      return;
+    }
+    const open = indexedDB.open("noter-home", 1);
+    open.onupgradeneeded = () => open.result.createObjectStore("kv");
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const db = open.result;
+      const tx = db.transaction("kv", mode);
+      const request = action(tx.objectStore("kv"));
+      tx.oncomplete = () => {
+        db.close();
+        resolve(request ? request.result : undefined);
+      };
+      tx.onerror = tx.onabort = () => {
+        db.close();
+        reject(tx.error);
+      };
+    };
+  });
+}
+
+/* Billeder gemmes som ArrayBuffer — sikrere end Blob i ældre Safari */
+function recordToGeo(record) {
+  homeObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+  homeObjectUrls = [];
+  const url = (file) => {
+    const objectUrl = URL.createObjectURL(new Blob([file.buf], { type: file.type }));
+    homeObjectUrls.push(objectUrl);
+    return objectUrl;
+  };
+  return {
+    ...record.geo,
+    src: {
+      pages: record.files.pages.map(url),
+      dots: record.files.bottoms.map(url),
+      dock: null,
+      noter: url(record.files.noter),
+    },
+  };
+}
+
+async function loadCustomHome() {
+  try {
+    const record = await homeDb("readonly", (store) => store.get("custom"));
+    customHome = record ? recordToGeo(record) : null;
+  } catch {
+    customHome = null;
+  }
+  syncHomeGeo();
+}
+
+/* ---- analyse af screenshots ---- */
+
+function loadImageFile(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Billedet kunne ikke læses"));
+    };
+    img.src = url;
+  });
+}
+
+function drawToCanvas(img, width, height, sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight) {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, width, height);
+  return canvas;
+}
+
+function toHex([r, g, b]) {
+  return `#${[r, g, b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("")}`;
+}
+
+/* Grupperer tal: værdier tættere end tol bliver én gruppe */
+function clusterValues(values, tol) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const groups = [];
+  for (const value of sorted) {
+    const last = groups[groups.length - 1];
+    if (last && value - last.max <= tol) {
+      last.sum += value;
+      last.n += 1;
+      last.max = value;
+    } else groups.push({ sum: value, n: 1, max: value });
+  }
+  return groups.map((g) => ({ at: g.sum / g.n, n: g.n }));
+}
+
+/* Finder de sammenhængende ikoner (firkanter) i et område af en side */
+function findIcons(mask, w, y0, y1, minSize, maxSize) {
+  const seen = new Uint8Array(w * (y1 - y0));
+  const stack = new Int32Array(w * (y1 - y0));
+  const found = [];
+  for (let y = y0; y < y1; y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      const local = (y - y0) * w + x;
+      if (seen[local] || !mask[y * w + x]) continue;
+      let top = 0;
+      stack[top++] = local;
+      seen[local] = 1;
+      let minX = x, maxX = x, minY = y, maxY = y, count = 0;
+      while (top) {
+        const p = stack[--top];
+        const px = p % w;
+        const py = (p - px) / w + y0;
+        count += 1;
+        if (px < minX) minX = px;
+        if (px > maxX) maxX = px;
+        if (py < minY) minY = py;
+        if (py > maxY) maxY = py;
+        /* mask-indeks = lokalt indeks + forskydning, da området er hele rækker */
+        const shift = y0 * w;
+        if (px > 0 && !seen[p - 1] && mask[p - 1 + shift]) {
+          seen[p - 1] = 1;
+          stack[top++] = p - 1;
+        }
+        if (px < w - 1 && !seen[p + 1] && mask[p + 1 + shift]) {
+          seen[p + 1] = 1;
+          stack[top++] = p + 1;
+        }
+        if (py > y0 && !seen[p - w] && mask[p - w + shift]) {
+          seen[p - w] = 1;
+          stack[top++] = p - w;
+        }
+        if (py < y1 - 1 && !seen[p + w] && mask[p + w + shift]) {
+          seen[p + w] = 1;
+          stack[top++] = p + w;
+        }
+      }
+      const bw = maxX - minX + 1;
+      const bh = maxY - minY + 1;
+      const ratio = bw / bh;
+      if (bw >= minSize && bw <= maxSize && ratio > 0.8 && ratio < 1.25 && count > bw * bh * 0.1) {
+        found.push({ x: (minX + maxX + 1) / 2, y: (minY + maxY + 1) / 2, size: (bw + bh) / 2 });
+      }
+    }
+  }
+  return found;
+}
+
+/* Er et smalt bånd sidens prikker? Prikker er lige store, runde og står
+   med samme afstand midt på skærmen — i modsætning til en ikon-tekst. */
+function looksLikeDots(rowsMask, w, band) {
+  const height = band.b - band.a;
+  const center = (band.minX + band.maxX) / 2;
+  if (Math.abs(center - w / 2) > 0.04 * w || band.maxX - band.minX > 0.3 * w) return false;
+  const columns = new Uint8Array(w);
+  for (let y = band.a; y < band.b; y += 1) {
+    for (let x = band.minX; x <= band.maxX; x += 1) if (rowsMask[y * w + x]) columns[x] = 1;
+  }
+  const segments = [];
+  for (let x = band.minX; x <= band.maxX + 1; x += 1) {
+    if (columns[x] && (x === 0 || !columns[x - 1])) segments.push({ start: x });
+    if (!columns[x] && x > 0 && columns[x - 1] && segments.length) segments[segments.length - 1].end = x;
+  }
+  if (segments.length < 2) return false;
+  const widths = segments.map((s) => s.end - s.start);
+  const median = [...widths].sort((a, b) => a - b)[widths.length >> 1];
+  if (widths.some((v) => Math.abs(v - median) > Math.max(2, median * 0.4))) return false;
+  if (median < height * 0.5 || median > height * 2) return false;
+  const centers = segments.map((s) => (s.start + s.end) / 2);
+  const gaps = centers.slice(1).map((c, i) => c - centers[i]);
+  const gap = [...gaps].sort((a, b) => a - b)[gaps.length >> 1];
+  return gaps.every((g) => Math.abs(g - gap) <= Math.max(2, gap * 0.2));
+}
+
+/* Hovedanalysen. imgs = de tre screenshots (side 1, 2, 3).
+   Returnerer geometri i screenshot-pixels + beskeder, eller kaster en fejl. */
+function analyzeHomeScreens(imgs) {
+  const W = imgs[0].naturalWidth;
+  const H = imgs[0].naturalHeight;
+  if (imgs.some((img) => img.naturalWidth !== W || img.naturalHeight !== H)) {
+    throw new Error("De tre screenshots har ikke samme størrelse. Tag dem på samme telefon.");
+  }
+  if (W >= H) throw new Error("Tag screenshots med telefonen på højkant.");
+
+  const scale = Math.min(1, 600 / W);
+  const w = Math.round(W * scale);
+  const h = Math.round(H * scale);
+  const pages = imgs.map((img) => drawToCanvas(img, w, h).getContext("2d").getImageData(0, 0, w, h).data);
+  const warnings = [];
+
+  /* 1. Baggrundsfarven = den klart hyppigste farve */
+  const counts = new Map();
+  for (const data of pages) {
+    for (let i = 0; i < data.length; i += 8) {
+      const key = ((data[i] >> 3) << 10) | ((data[i + 1] >> 3) << 5) | (data[i + 2] >> 3);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+  }
+  const topKey = [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  const sum = [0, 0, 0];
+  let n = 0;
+  for (const data of pages) {
+    for (let i = 0; i < data.length; i += 8) {
+      const key = ((data[i] >> 3) << 10) | ((data[i + 1] >> 3) << 5) | (data[i + 2] >> 3);
+      if (key !== topKey) continue;
+      sum[0] += data[i];
+      sum[1] += data[i + 1];
+      sum[2] += data[i + 2];
+      n += 1;
+    }
+  }
+  const bg = sum.map((v) => v / n);
+
+  /* 2. Masker: hvad er ikke baggrund, og hvad er forskelligt mellem siderne */
+  const masks = pages.map((data) => {
+    const mask = new Uint8Array(w * h);
+    for (let p = 0, i = 0; p < mask.length; p += 1, i += 4) {
+      mask[p] =
+        Math.abs(data[i] - bg[0]) > BG_TOL || Math.abs(data[i + 1] - bg[1]) > BG_TOL || Math.abs(data[i + 2] - bg[2]) > BG_TOL
+          ? 1
+          : 0;
+    }
+    return mask;
+  });
+  const union = new Uint8Array(w * h);
+  const rowContent = new Int32Array(h);
+  const rowVary = new Int32Array(h);
+  const rowMinX = new Int32Array(h).fill(w);
+  const rowMaxX = new Int32Array(h).fill(-1);
+  for (let y = 0; y < h; y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      const p = y * w + x;
+      if (masks[0][p] || masks[1][p] || masks[2][p]) {
+        union[p] = 1;
+        rowContent[y] += 1;
+        if (x < rowMinX[y]) rowMinX[y] = x;
+        if (x > rowMaxX[y]) rowMaxX[y] = x;
+      }
+      const i = p * 4;
+      for (let c = 0; c < 3; c += 1) {
+        const v0 = pages[0][i + c];
+        const v1 = pages[1][i + c];
+        const v2 = pages[2][i + c];
+        if (Math.max(v0, v1, v2) - Math.min(v0, v1, v2) > DIFF_TOL) {
+          rowVary[y] += 1;
+          break;
+        }
+      }
+    }
+  }
+
+  /* Ensfarvet? Kanterne midt på skærmen må kun være baggrund */
+  let edge = 0;
+  let edgeHits = 0;
+  for (let y = Math.round(h * 0.12); y < h * 0.78; y += 1) {
+    for (const x of [1, 3, 5, w - 2, w - 4, w - 6]) {
+      edge += 1;
+      edgeHits += union[y * w + x];
+    }
+  }
+  if (edgeHits / edge > 0.03) {
+    throw new Error("Baggrunden ser ikke ensfarvet ud. Brug et helt ensfarvet baggrundsbillede (uden farveovergang) og tag screenshots igen.");
+  }
+  const luminance = (0.2126 * bg[0] + 0.7152 * bg[1] + 0.0722 * bg[2]) / 255;
+  if (luminance > 0.45) {
+    warnings.push("Farven er lys. Statuslinjen i appen har altid hvid tekst, så en mørk farve ser mest ægte ud.");
+  }
+
+  /* 3. Vandrette bånd med indhold */
+  const bands = [];
+  for (let y = 0; y < h; y += 1) {
+    if (rowContent[y] < 2) continue;
+    const last = bands[bands.length - 1];
+    if (last && y - last.b <= 1) {
+      last.b = y + 1;
+    } else {
+      bands.push({ a: y, b: y + 1, content: 0, vary: 0, minX: w, maxX: -1 });
+    }
+    const band = bands[bands.length - 1];
+    band.content += rowContent[y];
+    band.vary += rowVary[y];
+    band.minX = Math.min(band.minX, rowMinX[y]);
+    band.maxX = Math.max(band.maxX, rowMaxX[y]);
+  }
+
+  /* Statuslinjen: lave bånd helt i toppen, før første høje (ikon/widget) */
+  let y0 = 0;
+  for (const band of bands) {
+    if (band.a > 0.08 * h || band.b - band.a >= 0.05 * h) break;
+    y0 = band.b;
+  }
+  y0 = Math.min(h - 1, y0 + 1);
+
+  /* Bunden: spring docken/søgefeltet over (ens på alle sider). Første bånd
+     nedefra, der ændrer sig, er enten prikkerne eller nederste ikonrække. */
+  let y1 = null;
+  for (let i = bands.length - 1; i >= 0; i -= 1) {
+    const band = bands[i];
+    if (band.a < y0) break;
+    if (band.vary <= band.content * 0.08) continue;
+    if (band.b - band.a < 0.025 * h && looksLikeDots(union, w, band)) {
+      const above = bands[i - 1];
+      y1 = above && above.b > y0 ? Math.round((above.b + band.a) / 2) : band.a - 2;
+    } else {
+      const below = bands[i + 1];
+      y1 = below ? Math.round((band.b + below.a) / 2) : Math.min(h, band.b + 2);
+    }
+    break;
+  }
+  if (y1 === null || y1 - y0 < h * 0.3) {
+    throw new Error("Kunne ikke finde ikonerne. Er det tre forskellige sider af hjemmeskærmen?");
+  }
+
+  /* 4. Ikoner → gitter */
+  const icons = masks.map((mask, page) =>
+    findIcons(mask, w, y0, y1, w * 0.1, w * 0.3).map((icon) => ({ ...icon, page })),
+  );
+  const all = icons.flat();
+  if (all.length < 4) throw new Error("Fandt for få app-ikoner. Har siderne apps (ikke kun widgets)?");
+  const sizes = all.map((i) => i.size).sort((a, b) => a - b);
+  const size = sizes[sizes.length >> 1];
+  const good = all.filter((i) => Math.abs(i.size - size) <= size * 0.15);
+
+  /* Kolonner: iPhone har altid 4, symmetrisk om midten */
+  const colGroups = clusterValues(good.map((i) => i.x - w / 2), size / 3);
+  let best = null;
+  for (let d = size * 1.02; d <= size * 2; d += 0.25) {
+    if (1.5 * d + size / 2 > w / 2) break;
+    let err = 0;
+    for (const g of colGroups) {
+      const k = Math.max(0, Math.min(3, Math.round(g.at / d + 1.5)));
+      err += g.n * (g.at - (k - 1.5) * d) ** 2;
+    }
+    if (!best || err < best.err - 1e-6) best = { err, d };
+  }
+  const colStep = best.d;
+
+  /* Rækker: fast afstand; find afstand og forskydning der passer bedst */
+  const rowGroups = clusterValues(good.map((i) => i.y), size / 3);
+  let bestRow = null;
+  for (let p = size * 1.02; p <= size * 2.2; p += 0.25) {
+    const first = rowGroups[0].at;
+    let err = 0;
+    for (const g of rowGroups) {
+      const k = Math.round((g.at - first) / p);
+      err += g.n * (g.at - first - k * p) ** 2;
+    }
+    if (!bestRow || err < bestRow.err - 1e-6) bestRow = { err, p };
+  }
+  const rowStep = rowGroups.length > 1 ? bestRow.p : size * 1.24;
+  /* Gennemsnitlig forskydning ud fra alle grupper */
+  const firstGroup = rowGroups[0].at;
+  let offset = 0;
+  let weight = 0;
+  for (const g of rowGroups) {
+    const k = Math.round((g.at - firstGroup) / rowStep);
+    offset += g.n * (g.at - k * rowStep);
+    weight += g.n;
+  }
+  let firstCenter = offset / weight;
+  while (firstCenter - rowStep - size / 2 >= y0) firstCenter -= rowStep;
+  const rowCenters = [];
+  for (let c = firstCenter; c + size / 2 <= y1 + 1; c += rowStep) rowCenters.push(c);
+  if (rowCenters.length < 4) throw new Error("Fandt for få ikonrækker til cifrene.");
+  const colCenters = [0, 1, 2, 3].map((k) => w / 2 + (k - 1.5) * colStep);
+
+  /* Hvilke felter har et ikon (bruges til tryk-effekten) */
+  const occupied = [0, 1, 2].map((page) =>
+    rowCenters.map((cy) =>
+      colCenters
+        .map((cx) =>
+          icons[page].some((i) => Math.abs(i.x - cx) < size * 0.3 && Math.abs(i.y - cy) < size * 0.3) ? "1" : "0",
+        )
+        .join(""),
+    ),
+  );
+
+  if (Math.abs(H / W - window.screen.height / window.screen.width) > 0.03 && window.screen.width < window.screen.height) {
+    warnings.push("Screenshots ser ud til at være fra en anden iPhone end denne. Tag dem på den telefon, du optræder med.");
+  }
+
+  const k = 1 / scale;
+  return {
+    geo: {
+      W,
+      H,
+      bg: toHex(bg),
+      pagesTop: Math.round(y0 * k),
+      pagesH: Math.round((y1 - y0) * k),
+      dotsTop: Math.round(y1 * k),
+      dotsH: H - Math.round(y1 * k),
+      icon: Math.round(size * k),
+      cols: colCenters.map((c) => Math.round((c - size / 2) * k)),
+      rows: rowCenters.map((c) => Math.round((c - size / 2) * k)),
+      occupied,
+      notes: null,
+    },
+    warnings,
+  };
+}
+
+/* ---- opsætningsskærm ---- */
+
+const homeSetup = document.querySelector("#homeSetup");
+const hsSlots = [...document.querySelectorAll(".hs-slot")];
+const hsStatus = document.querySelector("#hsStatus");
+const hsResult = document.querySelector("#hsResult");
+const hsSave = document.querySelector("#hsSave");
+const hsPreview1 = document.querySelector("#hsPreview1");
+const hsPreview3 = document.querySelector("#hsPreview3");
+const hsWall = document.querySelector("#hsWall");
+const WALL_COLORS = ["#000000", "#1c1c1e", "#0b1a33", "#10261b", "#2a0c14", "#1f1033"];
+
+let setupImages = [null, null, null];
+let setupResult = null;
+let wallColor = "#000000";
+
+function openHomeSetup() {
+  closeSettings();
+  homeSetup.classList.add("open");
+  homeSetup.setAttribute("aria-hidden", "false");
+  document.querySelector("#hsDelete").hidden = !customHome;
+  renderSetup();
+}
+
+function closeHomeSetup() {
+  homeSetup.classList.remove("open");
+  homeSetup.setAttribute("aria-hidden", "true");
+  openSettings();
+}
+
+function renderSetup() {
+  hsSlots.forEach((slot, i) => {
+    const img = slot.querySelector("img");
+    const has = Boolean(setupImages[i]);
+    slot.classList.toggle("filled", has);
+    if (has && img.src !== setupImages[i].src) img.src = setupImages[i].src;
+  });
+  hsResult.hidden = !setupResult;
+  hsSave.disabled = !(setupResult && !setupResult.error && setupResult.geo.notes);
+  if (!setupResult) return;
+  if (setupResult.error) {
+    hsStatus.className = "hs-text error";
+    hsStatus.textContent = setupResult.error;
+    hsPreview1.parentElement.parentElement.hidden = true;
+    return;
+  }
+  hsPreview1.parentElement.parentElement.hidden = false;
+  const { geo, warnings } = setupResult;
+  const lines = [`Baggrund ${geo.bg.toUpperCase()} · ${geo.rows.length} rækker × 4 kolonner fundet.`, ...warnings];
+  lines.push(geo.notes ? "Noter er valgt. Tryk på Gem." : "Tryk på Noter-ikonet på side 3.");
+  hsStatus.className = warnings.length ? "hs-text warn" : "hs-text";
+  hsStatus.textContent = lines.join(" ");
+  drawSetupPreview(hsPreview1, 0);
+  drawSetupPreview(hsPreview3, 2);
+}
+
+function drawSetupPreview(canvas, page) {
+  const { geo } = setupResult;
+  const img = setupImages[page];
+  const cssWidth = canvas.clientWidth || 140;
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = Math.round(cssWidth * ratio);
+  canvas.height = Math.round((cssWidth * geo.H * ratio) / geo.W);
+  const ctx = canvas.getContext("2d");
+  const k = canvas.width / geo.W;
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  ctx.lineWidth = Math.max(1, 1.5 * ratio);
+  geo.rows.forEach((top, row) =>
+    geo.cols.forEach((left, col) => {
+      const x = left * k;
+      const y = top * k;
+      const s = geo.icon * k;
+      const isNotes = page === 2 && geo.notes && geo.notes.row === row && geo.notes.col === col;
+      if (page === 0) {
+        const digit = digitForGeo(geo, row, col);
+        if (digit === undefined) return;
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
+        ctx.fillRect(x, y, s, s);
+        ctx.fillStyle = "#ffd60a";
+        ctx.font = `700 ${Math.round(s * 0.6)}px -apple-system, system-ui, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(String(digit), x + s / 2, y + s / 2);
+      } else {
+        ctx.strokeStyle = isNotes ? "#ffd60a" : "rgba(255,255,255,0.35)";
+        ctx.lineWidth = (isNotes ? 3 : 1) * ratio;
+        ctx.strokeRect(x, y, s, s);
+      }
+    }),
+  );
+  /* Grænsen mellem glidende ikoner og prikker/dock */
+  ctx.strokeStyle = "rgba(255,214,10,0.7)";
+  ctx.setLineDash([4 * ratio, 4 * ratio]);
+  ctx.lineWidth = ratio;
+  ctx.beginPath();
+  ctx.moveTo(0, geo.dotsTop * k);
+  ctx.lineTo(canvas.width, geo.dotsTop * k);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function digitForGeo(geo, row, col) {
+  const saved = homeGeo;
+  homeGeo = geo;
+  const digit = digitAt({ row, col });
+  homeGeo = saved;
+  return digit;
+}
+
+async function pickSetupImage(index, file) {
+  if (!file) return;
+  try {
+    setupImages[index] = await loadImageFile(file);
+  } catch (error) {
+    setupResult = { error: error.message };
+    renderSetup();
+    return;
+  }
+  setupResult = null;
+  if (setupImages.every(Boolean)) {
+    hsStatus.textContent = "Måler…";
+    window.setTimeout(() => {
+      try {
+        setupResult = analyzeHomeScreens(setupImages);
+      } catch (error) {
+        setupResult = { error: error.message };
+      }
+      renderSetup();
+    }, 30);
+  }
+  renderSetup();
+}
+
+function tapSetupPreview(event) {
+  if (!setupResult || setupResult.error) return;
+  const { geo } = setupResult;
+  const rect = hsPreview3.getBoundingClientRect();
+  const x = ((event.clientX - rect.left) / rect.width) * geo.W;
+  const y = ((event.clientY - rect.top) / rect.height) * geo.H;
+  const col = geo.cols.findIndex((left) => x >= left - geo.icon * 0.15 && x <= left + geo.icon * 1.15);
+  const row = geo.rows.findIndex((top) => y >= top - geo.icon * 0.15 && y <= top + geo.icon * 1.15);
+  if (col < 0 || row < 0) return;
+  geo.notes = { page: 2, row, col };
+  renderSetup();
+}
+
+function canvasBlob(canvas) {
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Kunne ikke gemme billedet"))), "image/png"),
+  );
+}
+
+async function blobFile(canvas) {
+  const blob = await canvasBlob(canvas);
+  return { type: blob.type, buf: await blob.arrayBuffer() };
+}
+
+async function saveCustomHome() {
+  if (!setupResult?.geo?.notes) return;
+  hsSave.disabled = true;
+  hsSave.textContent = "Gemmer…";
+  const { geo } = setupResult;
+  try {
+    const pages = [];
+    const bottoms = [];
+    for (const img of setupImages) {
+      pages.push(await blobFile(drawToCanvas(img, geo.W, geo.pagesH, 0, geo.pagesTop, geo.W, geo.pagesH)));
+      bottoms.push(await blobFile(drawToCanvas(img, geo.W, geo.dotsH, 0, geo.dotsTop, geo.W, geo.dotsH)));
+    }
+    const notesImg = setupImages[2];
+    const noter = await blobFile(
+      drawToCanvas(notesImg, geo.icon, geo.icon, geo.cols[geo.notes.col], geo.rows[geo.notes.row], geo.icon, geo.icon),
+    );
+    const record = { geo, files: { pages, bottoms, noter }, savedAt: Date.now() };
+    await homeDb("readwrite", (store) => store.put(record, "custom"));
+    customHome = recordToGeo(record);
+    state.homeMode = "custom";
+    saveState();
+    syncHomeGeo();
+    setupImages = [null, null, null];
+    setupResult = null;
+    hsSave.textContent = "Gem og brug";
+    closeHomeSetup();
+  } catch (error) {
+    hsSave.textContent = "Gem og brug";
+    setupResult = { error: `Kunne ikke gemme: ${error.message}` };
+    renderSetup();
+  }
+}
+
+async function deleteCustomHome() {
+  try {
+    await homeDb("readwrite", (store) => store.delete("custom"));
+  } catch {
+    /* intet at slette */
+  }
+  customHome = null;
+  state.homeMode = "default";
+  saveState();
+  syncHomeGeo();
+  closeHomeSetup();
+}
+
+/* ---- ensfarvet baggrundsbillede til telefonen ---- */
+
+function renderWallSwatches() {
+  const holder = document.querySelector("#hsSwatches");
+  holder.innerHTML = WALL_COLORS.map(
+    (color) =>
+      `<button type="button" class="hs-swatch${color === wallColor ? " on" : ""}" data-color="${color}" style="background:${color}" aria-label="${color}"></button>`,
+  ).join("");
+  const input = document.querySelector("#hsColor");
+  input.value = wallColor;
+  input.parentElement.classList.toggle("on", !WALL_COLORS.includes(wallColor));
+}
+
+function wallpaperCanvas() {
+  const ratio = window.devicePixelRatio || 1;
+  let width = Math.round(window.screen.width * ratio);
+  let height = Math.round(window.screen.height * ratio);
+  if (width > height) [width, height] = [height, width];
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = wallColor;
+  ctx.fillRect(0, 0, width, height);
+  return canvas;
+}
+
+function showWallpaper() {
+  const canvas = wallpaperCanvas();
+  document.querySelector("#hsWallImg").src = canvas.toDataURL("image/png");
+  hsWall.classList.add("open");
+}
+
+async function shareWallpaper() {
+  const blob = await canvasBlob(wallpaperCanvas());
+  const file = new File([blob], "baggrund.png", { type: "image/png" });
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file] });
+    } catch {
+      /* annulleret */
+    }
+    return;
+  }
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "baggrund.png";
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(link.href), 4000);
+}
+
+function registerHomeSetupEvents() {
+  document.querySelector("#openHomeSetup").addEventListener("click", openHomeSetup);
+  document.querySelector("#hsClose").addEventListener("click", closeHomeSetup);
+  hsSlots.forEach((slot, i) => {
+    slot.querySelector("input").addEventListener("change", (event) => {
+      pickSetupImage(i, event.target.files[0]);
+      event.target.value = "";
+    });
+  });
+  hsPreview3.addEventListener("click", tapSetupPreview);
+  hsSave.addEventListener("click", saveCustomHome);
+  document.querySelector("#hsDelete").addEventListener("click", deleteCustomHome);
+  document.querySelector("#hsSwatches").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-color]");
+    if (!button) return;
+    wallColor = button.dataset.color;
+    renderWallSwatches();
+  });
+  document.querySelector("#hsColor").addEventListener("input", (event) => {
+    wallColor = event.target.value;
+    renderWallSwatches();
+  });
+  document.querySelector("#hsMakeWallpaper").addEventListener("click", showWallpaper);
+  document.querySelector("#hsWallShare").addEventListener("click", shareWallpaper);
+  document.querySelector("#hsWallDone").addEventListener("click", () => hsWall.classList.remove("open"));
+  renderWallSwatches();
 }
 
 /* ---------------- billedvedhæftning ---------------- */
@@ -1110,6 +1874,8 @@ function registerEvents() {
     state.category = categorySelect.value;
     state.prediction = resolvePrediction(predictionInput.value);
     state.inputMethod = document.querySelector("input[name='inputMethod']:checked")?.value || "longpress";
+    state.homeMode = homeModeSelect.value === "custom" && customHome ? "custom" : "default";
+    syncHomeGeo();
     saveState();
     closeSettings();
     renderAll();
@@ -1218,6 +1984,9 @@ document.addEventListener("visibilitychange", () => window.setTimeout(fitViewpor
 
 buildPad();
 registerEvents();
+registerHomeSetupEvents();
+syncHomeGeo();
+loadCustomHome();
 renderAll();
 window.setTimeout(() => app.classList.remove("no-anim"), 60);
 
