@@ -69,7 +69,7 @@ fakeHome.openSetup();    // opsætning af egen hjemmeskærm
 | `mode` / `setMode("default" \| "custom")` | Hvilken hjemmeskærm der bruges. Valget huskes. |
 | `hasCustom()` | Om der er gemt en egen hjemmeskærm. |
 | `ready` | Promise, der er færdig, når en gemt egen hjemmeskærm er indlæst. |
-| `exportSetup()` / `importSetup(data)` | Opsætningen som et objekt. Guiden har sine egne knapper til at dele og importere den som fil. |
+| `exportSetup()` / `importSetup(data)` | Opsætningen som et objekt. `importSetup` gemmer direkte med ikonet fra filen. Guiden har sine egne knapper til at dele og importere som fil – dér skal ikonet vælges. |
 
 ## Del opsætningen mellem apps
 
@@ -77,6 +77,15 @@ Hver app (hvert domæne) har sit eget lager. Sådan flytter du opsætningen:
 
 1. I appen, hvor den er sat op: åbn **Egen hjemmeskærm → Del til andre apps** og gem filen (fx i Filer).
 2. I den anden app: åbn **Egen hjemmeskærm → Importér fra en anden app** og vælg filen.
+3. Tryk på det ikon på side 3, der skal åbne **denne** app, og tryk **Gem**. Ikonet skal altid vælges ved import, for hver app har sit eget ikon.
+
+## Redigér uden at starte forfra
+
+Åbn **Egen hjemmeskærm → Redigér (ikon og screenshots)**:
+
+- **Skift app-ikon:** tryk på et andet ikon på side 3.
+- **Udskift et screenshot:** fx når et notifikationstal har ændret sig. Det nye screenshot skal have samme størrelse som de gamle (samme telefon). Målingen genbruges, så de andre sider røres ikke.
+- Tryk **Gem**, eller **Annullér** for at lade alt være.
 
 ## Gode råd
 
