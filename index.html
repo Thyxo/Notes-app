@@ -179,26 +179,6 @@
       <div class="hotspot" id="hotspot" aria-hidden="true"></div>
     </div>
 
-    <!-- ============ FALSK HJEMMESKÆRM (perform) ============ -->
-    <div class="home" id="home" aria-hidden="true">
-      <div class="home-stage" id="homeStage">
-        <div class="home-pages" id="homePages">
-          <div class="home-track" id="homeTrack">
-            <img src="home/page1.webp" alt="" draggable="false" />
-            <img src="home/page2.webp" alt="" draggable="false" />
-            <img src="home/page3.webp" alt="" draggable="false" />
-          </div>
-          <div class="home-press" id="homePress"></div>
-        </div>
-        <div class="home-dots" id="homeDots">
-          <img src="home/dots1.png" alt="" draggable="false" />
-          <img src="home/dots2.png" alt="" draggable="false" />
-          <img src="home/dots3.png" alt="" draggable="false" />
-        </div>
-        <img class="home-dock" src="home/dock.webp" alt="" draggable="false" />
-      </div>
-    </div>
-
     <input type="file" id="imagePicker" accept="image/*" hidden />
 
     <!-- ============ PERFORMER ============ -->
@@ -258,67 +238,12 @@
       <button class="secondary" id="performButton" type="button">Perform</button>
     </section>
 
-    <!-- ============ EGEN HJEMMESKÆRM ============ -->
-    <section class="hsetup" id="homeSetup" aria-hidden="true" aria-label="Egen hjemmeskærm">
-      <header class="hs-head">
-        <button type="button" id="hsClose">Luk</button>
-        <h2>Egen hjemmeskærm</h2>
-        <span></span>
-      </header>
-      <div class="hs-scroll">
-        <p class="field-note">1 · Ensfarvet baggrund</p>
-        <div class="field-card hs-card">
-          <p class="hs-text">Hjemmeskærmen skal have en helt ensfarvet baggrund. Så kan ikonerne glide præcis som på den rigtige. Vælg gerne en mørk farve — statuslinjen i appen har altid hvid tekst.</p>
-          <div class="hs-swatches">
-            <div id="hsSwatches"></div>
-            <label class="hs-swatch hs-custom" aria-label="Egen farve"><input type="color" id="hsColor" value="#000000" /></label>
-          </div>
-          <button class="secondary" type="button" id="hsMakeWallpaper">Lav baggrundsbillede</button>
-          <ol class="hs-steps">
-            <li>Gem billedet i Fotos.</li>
-            <li>Indstillinger → Baggrund → Tilføj ny baggrund → Fotos → vælg billedet.</li>
-            <li>Brug det på hjemmeskærmen uden sløring.</li>
-          </ol>
-        </div>
-
-        <p class="field-note">2 · Tre screenshots</p>
-        <div class="field-card hs-card">
-          <p class="hs-text">Tag et screenshot af side 1, 2 og 3 af din hjemmeskærm. Noter skal ligge på side 3. Ingen notifikationer, åbne mapper eller vrikkende ikoner.</p>
-          <div class="hs-slots">
-            <label class="hs-slot"><input type="file" accept="image/*" class="vh" /><img alt="" /><span>Side 1</span></label>
-            <label class="hs-slot"><input type="file" accept="image/*" class="vh" /><img alt="" /><span>Side 2</span></label>
-            <label class="hs-slot"><input type="file" accept="image/*" class="vh" /><img alt="" /><span>Side 3</span></label>
-          </div>
-        </div>
-
-        <div id="hsResult" hidden>
-          <p class="field-note">3 · Tjek og vælg Noter</p>
-          <div class="field-card hs-card">
-            <p class="hs-text" id="hsStatus"></p>
-            <div class="hs-previews">
-              <figure><canvas id="hsPreview1"></canvas><figcaption>Side 1 · cifrene</figcaption></figure>
-              <figure><canvas id="hsPreview3"></canvas><figcaption>Side 3 · tryk på Noter</figcaption></figure>
-            </div>
-          </div>
-        </div>
-
-        <button class="primary" type="button" id="hsSave" disabled>Gem og brug</button>
-        <button class="secondary danger" type="button" id="hsDelete" hidden>Slet egen hjemmeskærm</button>
-      </div>
-    </section>
-
-    <div class="hs-wall" id="hsWall">
-      <img id="hsWallImg" alt="Ensfarvet baggrund" />
-      <p>Hold fingeren på billedet og vælg <b>Føj til Fotos</b> — eller tryk på Gem billede.</p>
-      <button class="secondary" type="button" id="hsWallShare">Gem billede</button>
-      <button class="primary" type="button" id="hsWallDone">Færdig</button>
-    </div>
-
     <section class="pad" id="numberPad" aria-hidden="true" aria-label="Talpanel">
       <div class="pad-display" id="padDisplay">--</div>
       <div class="pad-grid" id="padGrid"></div>
     </section>
 
+    <script src="fakehome.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
