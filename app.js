@@ -54,6 +54,22 @@ const pools = {
       "Gaffel", "Spiseske", "Teske", "Bordkniv", "Smørkniv", "Serveringsske", "Serveringsgaffel", "Salatbestik", "Grydelap", "Viskestykke",
     ],
   },
+  countries: {
+    label: "lande",
+    title: "100 lande",
+    items: [
+      "Danmark", "Sverige", "Norge", "Finland", "Island", "Tyskland", "Frankrig", "Italien", "Spanien", "Portugal",
+      "Holland", "Belgien", "Luxembourg", "Schweiz", "Østrig", "Polen", "Tjekkiet", "Slovakiet", "Ungarn", "Rumænien",
+      "Bulgarien", "Grækenland", "Kroatien", "Slovenien", "Serbien", "Albanien", "Irland", "England", "Skotland", "Wales",
+      "Estland", "Letland", "Litauen", "Ukraine", "Tyrkiet", "Cypern", "Malta", "Monaco", "Montenegro", "Georgien",
+      "Rusland", "Kina", "Japan", "Sydkorea", "Indien", "Pakistan", "Thailand", "Vietnam", "Indonesien", "Filippinerne",
+      "Malaysia", "Singapore", "Nepal", "Mongoliet", "Iran", "Irak", "Israel", "Jordan", "Libanon", "Saudi-Arabien",
+      "Qatar", "Kuwait", "Oman", "Egypten", "Marokko", "Tunesien", "Algeriet", "Nigeria", "Ghana", "Kenya",
+      "Etiopien", "Tanzania", "Uganda", "Sydafrika", "Namibia", "Madagaskar", "Senegal", "Cameroun", "Angola", "Zambia",
+      "USA", "Canada", "Mexico", "Cuba", "Jamaica", "Panama", "Costa Rica", "Guatemala", "Brasilien", "Argentina",
+      "Chile", "Peru", "Colombia", "Venezuela", "Ecuador", "Bolivia", "Uruguay", "Paraguay", "Australien", "New Zealand",
+    ],
+  },
   cards: {
     label: "spillekort",
     title: "52 kort",
