@@ -1,4 +1,4 @@
-const CACHE_NAME = "liquid-notes-v27";
+const CACHE_NAME = "liquid-notes-v28";
 const ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./fakehome.js", "./manifest.webmanifest",
   "./home/page1.webp", "./home/page2.webp", "./home/page3.webp",
   "./home/dots1.png", "./home/dots2.png", "./home/dots3.png",

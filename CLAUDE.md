@@ -10,7 +10,7 @@ A static, no-build, single-page web app that visually mimics Apple Notes (Danish
 - `app.js` — all app logic and state (single file, no modules/bundler)
 - `fakehome.js` — the fake home-screen input + own-home-screen setup, a reusable drop-in module also used by other apps ([FAKEHOME.md](FAKEHOME.md))
 - `styles.css` — all styling (CSS custom properties for light/dark theme, glassmorphism)
-- `sw.js` — service worker for offline caching (PWA), cache name `liquid-notes-v27` — **bump this version string whenever cached assets change**, otherwise installed clients won't see updates
+- `sw.js` — service worker for offline caching (PWA), cache name `liquid-notes-v28` — **bump this version string whenever cached assets change**, otherwise installed clients won't see updates
 - `manifest.webmanifest` — PWA manifest
 
 There is no `package.json`, build step, bundler, linter, or test suite. Open `index.html` directly in a browser (or serve the folder statically) to run it.
